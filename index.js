@@ -22,9 +22,7 @@ async function startApolloServer() {
   const server = new ApolloServer({
     typeDefs: [typeDefs, ...scalarTypeDefs],
     resolvers: { ...resolvers, ...scalarResolvers },
-    dataSources: () => ({
-      channexAPI: new ChannexAPI(),
-    }),
+    dataSources: () => ({ channexAPI: new ChannexAPI() }),
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
       process.env.NODE_ENV === 'development'
