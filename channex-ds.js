@@ -101,7 +101,10 @@ const fixFilter = (filter) => {
 }
 
 class ChannexAPI extends RESTDataSource {
-  constructor({ baseURL, logger = console }) {
+  constructor({
+    baseURL = 'https://app.channex.io/api/v1',
+    logger = console,
+  } = {}) {
     super()
     this.baseURL = baseURL
     this.logger = logger
@@ -120,7 +123,10 @@ class ChannexAPI extends RESTDataSource {
 
   // eslint-disable-next-line class-methods-use-this
   async willSendRequest(request) {
-    request.headers.set('user-api-key', process.env.CHANNEX_API_KEY)
+    request.headers.set(
+      'user-api-key',
+      this.context.CHANNEX_API_KEY || process.env.CHANNEX_API_KEY
+    )
     if (request.body)
       request.body = cloneDeepWith(request.body, fixWeekdayValues)
     // fs.writeFileSync(

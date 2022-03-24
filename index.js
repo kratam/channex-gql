@@ -1,4 +1,4 @@
-require('dotenv-yaml').config({path: '.env.yaml'})
+require('dotenv-yaml').config({ path: '.env.yaml' })
 
 const { ApolloServer } = require('apollo-server-express')
 const http = require('http')
@@ -16,8 +16,6 @@ const { ChannexAPI } = require('./channex-ds')
 const { resolvers } = require('./resolvers')
 const { typeDefs } = require('./types')
 
-if (!process.env.CHANNEX_URL) throw new Error('no CHANNEX_URL')
-
 async function startApolloServer() {
   const app = express()
   const httpServer = http.createServer(app)
@@ -25,18 +23,19 @@ async function startApolloServer() {
     typeDefs: [typeDefs, ...scalarTypeDefs],
     resolvers: { ...resolvers, ...scalarResolvers },
     dataSources: () => ({
-      channexAPI: new ChannexAPI({
-        baseURL: process.env.CHANNEX_URL,
-      }),
+      channexAPI: new ChannexAPI(),
     }),
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
-      process.env.NODE_ENV === 'production'
-        ? ApolloServerPluginLandingPageDisabled()
-        : ApolloServerPluginLandingPageGraphQLPlayground(),
+      process.env.NODE_ENV === 'development'
+        ? ApolloServerPluginLandingPageGraphQLPlayground()
+        : ApolloServerPluginLandingPageDisabled(),
     ],
-    introspection: process.env.NODE_ENV === 'development',
-    context: () => ({ foo: 'bar' }),
+    introspection: true,
+    context: ({ req }) => {
+      const CHANNEX_API_KEY = req.get('channex-api-key')
+      return { CHANNEX_API_KEY }
+    },
   })
   await server.start()
   server.applyMiddleware({ app })
