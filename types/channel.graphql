@@ -1,0 +1,42 @@
+type ChannelsResponse {
+  data: [Channel]!
+  meta: Meta
+}
+
+type ChannelResponse {
+  data: Channel!
+}
+
+type Channel {
+  id: UUID!
+  type: String!
+  attributes: ChannelAttribs!
+  relationships: ChannelRelationships
+}
+
+type ChannelRelationships {
+  group: RelationshipResponse
+  properties: RelationshipArrayResponse
+}
+
+type ChannelAttribs {
+  id: UUID!
+  title: String
+  """
+  Long code for channel, but docs are outdated, e.g. Airbnb is AirBNB
+  """
+  channel: String!
+  properties: [UUID]!
+  is_active: Boolean!
+  """
+  shows the valid endpoints/operations for this channel. Enum. Seen so far:
+  - load_future_reservations
+  - load_and_save_ari
+  """
+  actions: [String]!
+  # they're actually channel_rate_plan objects, not rate_plan
+  rate_plans: [ChannelRatePlan]!
+  settings: ChannelSettings!
+}
+
+union ChannelSettings = AirbnbSettings | BookingComSettings

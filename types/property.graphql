@@ -1,0 +1,163 @@
+type PropertySettings {
+  allow_availability_autoupdate: Boolean
+  min_price: Int
+  max_price: Int
+  state_length: Int
+}
+
+enum PhotoKind {
+  photo
+  ad
+  menu
+}
+
+type Photo {
+  url: String
+  position: Int
+  description: String
+  author: String
+  kind: PhotoKind
+}
+
+type PropertyContent {
+  description: String
+  photos: [Photo]
+}
+
+type PropertiesResponse {
+  data: [Property]!
+  meta: Meta
+}
+
+type PropertyResponse {
+  data: Property!
+}
+
+type PropertyAttribs {
+  id: UUID!
+  title: String!
+  currency: Currency!
+  email: EmailAddress
+  phone: String
+  zip_code: String
+  country: String
+  state: String
+  city: String
+  address: String
+  longitude: String
+  latitude: String
+  timezone: String
+  group_id: UUID
+  settings: PropertySettings
+  content: PropertyContent
+  # undocumented
+  hotel_policy_id: UUID
+  default_cancellation_policy_id: UUID
+  default_tax_set_id: UUID
+}
+
+type PropertyOptionAttribs {
+  currency: Currency!
+  id: UUID!
+  title: String!
+  group_ids: [String!]!
+}
+
+type PropertyOption {
+  attributes: PropertyOptionAttribs!
+  id: UUID!
+  type: String!
+}
+
+type PropertyOptionsResponse {
+  data: [PropertyOption]!
+}
+
+type PropertyRelationships {
+  groups: RelationshipArrayResponseWithAttribs!
+  users: RelationshipArrayResponseWithAttribs
+  facilities: RelationshipArrayResponseWithAttribs
+}
+
+type Property {
+  attributes: PropertyAttribs!
+  id: UUID!
+  type: String!
+  relationships: PropertyRelationships
+}
+
+input PropertySettingsInput {
+  allow_availability_autoupdate: Boolean
+  min_price: Int
+  max_price: Int
+  state_length: Int
+}
+
+input PropertyPhotosInput {
+  url: String
+  position: Int
+  description: String
+  author: String
+  kind: PhotoKind
+}
+
+input CreatePropertyInput {
+  title: String!
+  currency: Currency!
+  email: EmailAddress
+  phone: String
+  zip_code: String
+  country: String
+  state: String
+  city: String
+  address: String
+  longitude: String
+  latitude: String
+  timezone: String
+  facilities: [String]
+  group_id: UUID
+  settings: PropertySettingsInput
+  photos: [PropertyPhotosInput]
+  # undocumented
+  hotel_policy_id: UUID
+  default_cancellation_policy_id: UUID
+  default_tax_set_id: UUID
+}
+
+# same as CreatePropertyInput but fields are not required except the new id prop
+input UpdatePropertyInput {
+  id: UUID!
+  title: String
+  currency: Currency
+  email: EmailAddress
+  phone: String
+  zip_code: String
+  country: String
+  state: String
+  city: String
+  address: String
+  longitude: String
+  latitude: String
+  timezone: String
+  facilities: [String]
+  group_id: UUID
+  settings: PropertySettingsInput
+  photos: [PropertyPhotosInput]
+  # undocumented
+  hotel_policy_id: UUID
+  default_cancellation_policy_id: UUID
+  default_tax_set_id: UUID
+
+}
+
+type Query {
+  ch_properties(pagination: PaginationInput): PropertiesResponse!
+  ch_propertyOptions: PropertyOptionsResponse!
+  ch_property(propertyId: UUID!): PropertyResponse!
+}
+
+type Mutation {
+  ch_createProperty(property: CreatePropertyInput!): PropertyResponse!
+  ch_updateProperty(property: UpdatePropertyInput!): PropertyResponse!
+  ch_deleteProperty(propertyId: UUID!): MutationResponse!
+}

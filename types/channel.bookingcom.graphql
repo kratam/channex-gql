@@ -1,0 +1,19 @@
+type BookingComSettings {
+  # defined in rate_plan
+  derived_option: DerivedOption!
+  """
+  Hotel ID from Booking.com
+  """
+  hotel_id: String!
+  # not sure if it matters. Seen: Channex-prod-one
+  machine_account: String
+  mappingSettings: BookingComMappingSeetings!
+}
+
+type BookingComMappingSeetings {
+  """
+  json, where key is a bookingCom room_id
+  and value is a UUID (channel_rate_id?)
+  """
+  rooms: JSONObject
+}

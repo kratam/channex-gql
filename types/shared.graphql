@@ -1,0 +1,80 @@
+type RelationshipAttribs {
+  id: String!
+  title: String
+  """
+  for user types
+  """
+  email: String
+  """
+  for user types
+  """
+  name: String
+}
+type RelationshipData {
+  id: String!
+  type: String!
+}
+
+type RelationshipDataWithAttribs {
+  attributes: RelationshipAttribs!
+  id: String!
+  type: String!
+}
+
+type RelationshipArrayResponse {
+  data: [RelationshipData]
+}
+
+type RelationshipResponse {
+  data: RelationshipData
+}
+
+type RelationshipArrayResponseWithAttribs {
+  data: [RelationshipDataWithAttribs]
+}
+
+type RelationshipResponseWithAttribs {
+  data: RelationshipDataWithAttribs
+}
+
+type Relationship {
+  groups: RelationshipArrayResponse
+  facilities: RelationshipArrayResponse
+  properties: RelationshipArrayResponse
+  rate_plans: RelationshipArrayResponse
+  room_types: RelationshipArrayResponse
+  users: RelationshipArrayResponse
+
+  group: RelationshipResponse
+  property: RelationshipResponse
+  room_type: RelationshipResponse
+  rate_plan: RelationshipResponse
+}
+
+input PaginationInput {
+  page: Int
+  limit: Int
+}
+
+input FilterInput {
+  object: JSON!
+}
+
+input OrderInput {
+  object: JSON!
+}
+
+type MutationResponse {
+  meta: MutationMeta
+}
+type MutationMeta {
+  message: String
+}
+
+type Meta {
+  limit: Int
+  page: Int
+  total: Int
+  order_by: String
+  order_direction: String
+}

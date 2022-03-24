@@ -1,0 +1,154 @@
+type HotelPoliciesResponse {
+  data: [HotelPolicy]!
+  meta: Meta
+}
+
+type HotelPolicyResponse {
+  data: HotelPolicy!
+}
+
+type HotelPolicy {
+  id: UUID!
+  type: String!
+  attributes: HotelPolicyAttribs
+}
+
+type Query {
+  ch_hotelPolicy(hotelPolicyId: UUID!): HotelPolicyResponse!
+  ch_hotelPolicies(pagination: PaginationInput): HotelPoliciesResponse!
+}
+
+type Mutation {
+  ch_createHotelPolicy(hotelPolicy: CreateHotelPolicyInput!): HotelPolicyResponse!
+  ch_updateHotelPolicy(hotelPolicy: UpdateHotelPolicyInput!): HotelPolicyResponse!
+  ch_deleteHotelPolicy(hotelPolicyId: UUID!): MutationResponse!
+}
+
+input UpdateHotelPolicyInput {
+  id: UUID!
+  title: String
+  currency: Currency
+  is_adults_only: Boolean
+  """
+  how many guests can stay at Property at same time.
+  """
+  max_count_of_guests: PositiveInt
+  checkin_from_time: LocalTime
+  checkin_to_time: LocalTime
+  checkout_from_time: LocalTime
+  checkout_to_time: LocalTime
+  internet_access_type: InternetAccessTypeEnum
+  """
+  Field represent cost of internet access. If internet access is free, leave this field empty by passing null value.
+  """
+  internet_access_cost: PositiveInt
+  parking_type: ParkingTypeEnum
+  parking_reservation: ParkingReservationEnum
+  parking_is_private: Boolean
+  pets_policy: PetsPolicyEnum
+  """
+  If your property charge non refundable fee for pets accommodation, provide it amount here.
+  """
+  pets_non_refundable_fee: Int
+  """
+  If your property charge refundable deposit for pets accommodation, provide it amount here.
+  """
+  pets_refundable_deposit: Int
+  smoking_policy: SmokingPolicyEnum
+}
+
+input CreateHotelPolicyInput {
+  title: String!
+  currency: Currency!
+  is_adults_only: Boolean
+  """
+  how many guests can stay at Property at same time.
+  """
+  max_count_of_guests: PositiveInt!
+  checkin_from_time: LocalTime!
+  checkin_to_time: LocalTime!
+  checkout_from_time: LocalTime!
+  checkout_to_time: LocalTime!
+  internet_access_type: InternetAccessTypeEnum!
+  """
+  Field represent cost of internet access. If internet access is free, leave this field empty by passing null value.
+  """
+  internet_access_cost: Int
+  parking_type: ParkingTypeEnum!
+  parking_reservation: ParkingReservationEnum!
+  parking_is_private: Boolean!
+  pets_policy: PetsPolicyEnum!
+  """
+  If your property charge non refundable fee for pets accommodation, provide it amount here.
+  """
+  pets_non_refundable_fee: Int
+  """
+  If your property charge refundable deposit for pets accommodation, provide it amount here.
+  """
+  pets_refundable_deposit: Int
+  smoking_policy: SmokingPolicyEnum!
+}
+
+type HotelPolicyAttribs {
+  id: UUID!
+  title: String!
+  currency: Currency!
+  is_adults_only: Boolean
+  """
+  how many guests can stay at Property at same time.
+  """
+  max_count_of_guests: PositiveInt!
+  checkin_from_time: LocalTime!
+  checkin_to_time: LocalTime!
+  checkout_from_time: LocalTime!
+  checkout_to_time: LocalTime!
+  internet_access_type: InternetAccessTypeEnum!
+  """
+  Field represent cost of internet access. If internet access is free, leave this field empty by passing null value.
+  """
+  internet_access_cost: Int
+  parking_type: ParkingTypeEnum!
+  parking_reservation: ParkingReservationEnum!
+  parking_is_private: Boolean!
+  pets_policy: PetsPolicyEnum!
+  """
+  If your property charge non refundable fee for pets accommodation, provide it amount here.
+  """
+  pets_non_refundable_fee: Int
+  """
+  If your property charge refundable deposit for pets accommodation, provide it amount here.
+  """
+  pets_refundable_deposit: Int
+  smoking_policy: SmokingPolicyEnum!
+}
+
+enum SmokingPolicyEnum {
+  no_smoking
+  permitted_areas_only
+  allowed
+}
+
+enum PetsPolicyEnum {
+  allowed
+  not_allowed
+  by_arrangements
+  assistive_only
+}
+
+enum ParkingReservationEnum {
+  not_available
+  not_needed
+  needed
+}
+
+enum ParkingTypeEnum {
+  none
+  on_site
+  nearby
+}
+
+enum InternetAccessTypeEnum {
+  none
+  wifi
+  wired
+}

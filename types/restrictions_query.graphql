@@ -1,0 +1,60 @@
+input GetRestrictionsFilterInput {
+  """
+  List of comma separated restrictions what you would like to load.
+  Supported values:
+  - availability
+  - rate
+  - min_stay_arrival
+  - min_stay_through
+  - closed_to_arrival
+  - closed_to_departure
+  - stop_sell
+  - max_stay
+  - availability_offset
+  - max_sell
+  - max_availability
+  """
+  restrictions: String!
+  """
+  required if no date_lte
+  """
+  date: LocalDate
+  """
+  required if no date
+  """
+  date_lte: LocalDate
+  """
+  required if no date
+  """
+  date_gte: LocalDate
+  property_id: UUID
+  rate_plan_id: UUID
+  room_type_id: UUID
+}
+
+type RestrictionsResponse {
+  data: [Restriction]
+}
+
+type Restriction {
+  rate_plan_id: UUID!
+  rate_plan: RatePlanResponse!
+  date: LocalDate!
+  availability: Int
+  rate: Int
+  min_stay_arrival: Int
+  min_stay_through: Int
+  closed_to_arrival: Boolean
+  closed_to_departure: Boolean
+  stop_sell: Boolean
+  max_stay: Int
+  availability_offset: Int
+  max_sell: Int
+  max_availability: Int
+}
+
+type Query {
+  ch_restrictions(
+    filter: GetRestrictionsFilterInput!
+  ): RestrictionsResponse
+}

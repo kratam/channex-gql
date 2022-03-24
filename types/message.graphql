@@ -1,0 +1,107 @@
+enum MessageSenderEnum {
+  guest
+  property
+  system
+}
+
+type MessageAttribs {
+  # message can be null!
+  message: String
+  sender: MessageSenderEnum!
+  inserted_at: Timestamp!
+  updated_at: Timestamp
+  attachments: [String]!
+  meta: JSONObject
+}
+
+type MessageThreadAttribs {
+  title: String!
+  is_closed: Boolean!
+  provider: String!
+  message_count: Int!
+  last_message: MessageAttribs
+  last_message_received_at: Timestamp
+  inserted_at: Timestamp!
+  updated_at: Timestamp
+}
+
+type MessageRelationships {
+  message_thread: RelationshipResponse!
+  user: RelationshipResponse
+}
+
+type Message {
+  attributes: MessageAttribs!
+  id: UUID!
+  relationships: MessageRelationships!
+  type: String!
+}
+
+type MessageThreadRelationships {
+  booking: RelationshipResponse
+  channel: RelationshipResponse!
+  property: RelationshipResponse!
+}
+
+type MessageThread {
+  attributes: MessageThreadAttribs!
+  id: UUID!
+  relationships: MessageThreadRelationships!
+  type: String!
+  messages: MessagesResponse!
+  booking: BookingRevisionResponse
+}
+
+type MessageThreadsResponse {
+  data: [MessageThread]!
+  meta: Meta
+}
+
+type MessageThreadResponse {
+  data: MessageThread!
+}
+
+type MessagesResponse {
+  data: [Message]!
+  meta: Meta
+}
+
+type MessageResponse {
+  data: Message!
+}
+
+type Query {
+  ch_messagesByThread(
+    threadId: UUID!
+    pagination: PaginationInput
+    order: OrderInput
+  ): MessagesResponse!
+  ch_messagesByBooking(
+    bookingId: UUID!
+    pagination: PaginationInput
+    order: OrderInput
+  ): MessagesResponse!
+  ch_messageThreads(
+    pagination: PaginationInput
+    filter: FilterInput
+    order: OrderInput
+  ): MessageThreadsResponse!
+  ch_messageThread(threadId: UUID!): MessageThreadResponse!
+}
+
+input SendMessageInput {
+  message: String!
+}
+
+type Mutation {
+  ch_sendMessageToBooking(
+    message: SendMessageInput!
+    bookingId: UUID!
+  ): MessageResponse!
+  ch_sendMessageToThread(
+    message: SendMessageInput!
+    threadId: UUID!
+  ): MessageResponse!
+  ch_closeMessageThread(threadId: UUID!): MessageThreadResponse!
+  ch_openMessageThread(threadId: UUID!): MessageThreadResponse!
+}

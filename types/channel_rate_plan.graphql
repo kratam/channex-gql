@@ -1,0 +1,11 @@
+type ChannelRatePlan {
+  id: UUID!
+  rate_plan_id: UUID
+  """
+  Settings related to the specific channel.
+  """
+  settings: ChannelRatePlanSettings!
+}
+
+union ChannelRatePlanSettings = AirbnbRatePlanSettings
+

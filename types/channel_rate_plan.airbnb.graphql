@@ -1,0 +1,136 @@
+type AirbnbRatePlanSettings {
+  """
+  probably enum. Seen so far:
+  - approved
+  """
+  approval_status: String!
+  # updated via channels/:id/execute/update_availability_rule
+  availability_rule: AirbnbAvailabilityRule!
+  listing_id: String!
+  """
+  probably enum. Seen so far:
+  - houses
+  """
+  listing_type: String!
+  # updated via channels/:id/execute/update_price_settings
+  pricing_setting: AirbnbPriceSettings!
+  """
+  published status of the channel_rate_plan, not the listing
+  """
+  published: Boolean!
+  """
+  probably enum. Seen so far:
+  - sync_rates_and_availability
+  - pending
+  """
+  sync_category: String!
+}
+
+type AirbnbAvailabilityRule {
+  """
+  Minimum advance booking in hours. Possible values:
+  - 0, 1, ...24
+  - 48
+  - 72
+  - 168
+  """
+  booking_lead_time: Int!
+  """
+  7 values, first: monday. Indicates if it's allowed to check in.
+  """
+  day_of_week_check_in: [Boolean]!
+  """
+  7 values, first: monday. Indicates if it's allowed to check out.
+  """
+  day_of_week_check_out: [Boolean]!
+  """
+  7 values, first: monday. Minimum nights per weekday.
+  """
+  day_of_week_min_nights: [Int]!
+  default_max_nights: Int!
+  default_min_nights: Int!
+  listing_id: String!
+  """
+  Maximum advance booking in days. Possible values:
+  - -1: All dates are available
+  - 30, 60, ... 330
+  - 365
+  """
+  max_days_notice: Int!
+  """
+  Auto-block days after reservations. Possible values:
+  - 0
+  - 1
+  - 2
+  """
+  turnover_days: Int!
+}
+
+type AirbnbPriceSettings {
+  # Currency
+  listing_currency: Currency!
+
+  # Pricing settings
+  default_daily_price: Int!
+  weekend_price: Int!
+
+  # Length of stay discounts
+  """
+  Monthly discount %. 0: no discount
+  """
+  monthly_price_factor: Int!
+  """
+  Weekly discount %. 0: no discount
+  """
+  weekly_price_factor: Int!
+
+  # Standard fees and charges
+  price_per_extra_person: Int!
+  guests_included: Int!
+  security_deposit: Int!
+  cleaning_fee: Int!
+
+  # Other fees
+  standard_fees: [AirbnbStandardFee]!
+
+  # Unlisted in the UI
+  pass_through_taxes: [String]!
+  """
+  Probably enum. Seen so far:
+  - NO_AIRBNB_COLLECTED_TAX
+  """
+  pass_through_taxes_collection_type: String!
+}
+
+type AirbnbStandardFee {
+  amount: Float!
+  """
+  flat: fixed price, percent: percentage
+  """
+  amount_type: AirbnbAmountTypeEnum!
+  charge_type: AirbnbChargeTypeEnum!
+  fee_type: AirbnbFeeTypeEnum!
+  # never seen anything but null
+  fee_unit_type: String
+  # never seen anything bul false
+  offline: Boolean
+}
+
+enum AirbnbAmountTypeEnum {
+  flat
+  percent
+}
+
+enum AirbnbFeeTypeEnum {
+  PASS_THROUGH_RESORT_FEE
+  PASS_THROUGH_MANAGEMENT_FEE
+  PASS_THROUGH_COMMUNITY_FEE
+  # only this can be PER_PERSON
+  PASS_THROUGH_LINEN_FEE
+}
+
+enum AirbnbChargeTypeEnum {
+  PER_GROUP
+  # only for PASS_THROUGH_LINEN_FEE
+  PER_PERSON
+}

@@ -1,0 +1,340 @@
+type BookingRevisionResponse {
+  data: BookingRevision!
+  meta: Meta
+}
+
+type BookingRevisionsResponse {
+  data: [BookingRevision]!
+  meta: Meta
+}
+
+type BookingRevision {
+  type: String!
+  id: UUID!
+  attributes: BookingRevisionAttribs!
+  property: PropertyResponse!
+  booking: BookingResponse!
+}
+
+type BookingRelationships {
+  channel: RelationshipResponse
+  channel_events: RelationshipArrayResponse
+  message_thread: RelationshipResponse
+  properties: RelationshipArrayResponse!
+  rate_plans: RelationshipArrayResponse!
+  room_types: RelationshipArrayResponse!
+}
+
+type Booking {
+  type: String!
+  id: UUID!
+  attributes: BookingRevisionAttribs!
+  property: PropertyResponse!
+  message_thread: MessageThreadResponse
+  relationships: BookingRelationships!
+}
+
+type BookingResponse {
+  data: Booking!
+  meta: Meta
+}
+
+type BookingsResponse {
+  data: [Booking]!
+  meta: Meta!
+}
+
+type Query {
+  ch_bookingRevisions(
+    pagination: PaginationInput
+    filter: FilterInput
+    order: OrderInput
+  ): BookingRevisionsResponse!
+  ch_bookingRevisionsFeed(
+    pagination: PaginationInput
+    filter: FilterInput
+    order: OrderInput
+  ): BookingRevisionsResponse!
+  ch_bookingRevision(bookingRevisionId: UUID!): BookingRevisionResponse!
+  ch_booking(bookingId: UUID!): BookingResponse!
+  ch_bookings(
+    pagination: PaginationInput
+    filter: FilterInput
+    order: OrderInput
+  ): BookingsResponse!
+}
+
+type Mutation {
+  ch_ackBookingRevision(bookingRevisionId: UUID!): MutationResponse!
+  ch_createBooking(booking: CreateBookingInput!): CreateBookingResponse!
+}
+
+type CreateBookingResponse {
+  data: CreateBookingResponseData
+}
+
+type CreateBookingResponseData {
+  id: UUID!
+  type: String!
+  attributes: CreateBookingResponseDataAttribs
+  booking_revision: BookingRevisionResponse!
+}
+
+type CreateBookingResponseDataAttribs {
+  id: UUID!
+  meta: JSONObject
+  ota_reservation_code: String
+  revision_id: UUID!
+  status: String!
+  system_id: String!
+  unique_id: String!
+}
+
+input CreateBookingInput {
+  status: String!
+  """
+  Channel must be created before sending a booking
+  """
+  channel_id: UUID!
+  """
+  It'll be auto-generated if not set and it'll make
+  updating the booking problematic, so this should be sent
+  with the request.
+  """
+  reservation_id: String
+  arrival_date: LocalDate!
+  departure_date: LocalDate!
+  arrival_hour: LocalTime
+  currency: Currency!
+  customer: CreateBookingCustomerInput!
+  rooms: [CreateBookingRoomInput]!
+  # testing
+  notes: String
+  """
+  Information about who should collect Payment.
+  Can be property if payment should be collected by property,
+  ota if guest already pay at OTA and null if value is not specified.
+  Usually null mean that property will collect payment.
+  """
+  payment_collect: BookingPaymentCollectEnum
+  """
+  Information about how payment should be collected.
+  Can be credit_card if booking have associated credit card for payment,
+  bank_transfer if OTA will pass payment through Bank Transfer,
+  and null if payment type is not specified.
+  """
+  payment_type: BookingPaymentTypeEnum
+}
+
+input CreateBookingCustomerInput {
+  name: String
+  surname: String
+}
+
+input CreateBookingRoomInput {
+  occupancy: CreateBookingRoomOccupancyInput!
+  rate_plan_id: UUID!
+  days: [CreateBookingRoomDayInput]!
+}
+
+input CreateBookingRoomOccupancyInput {
+  adults: Int!
+  children: Int!
+  infants: Int!
+}
+
+input CreateBookingRoomDayInput {
+  date: LocalDate!
+  amount: Int!
+}
+
+enum BookingRevisionStatusEnum {
+  new
+  modified
+  cancelled
+}
+
+enum BookingPaymentCollectEnum {
+  property
+  ota
+}
+
+enum BookingPaymentTypeEnum {
+  credit_card
+  bank_transfer
+}
+
+type BookingOccupancy {
+  adults: Int!
+  children: Int!
+  infants: Int!
+}
+
+type BookingGuestInfo {
+  name: String
+  surname: String
+}
+
+type BookingCustomer {
+  name: String
+  surname: String
+  zip: String
+  phone: String
+  company: String
+  mail: String
+  language: String
+  country: String
+  city: String
+  address: String
+  meta: JSONObject
+}
+
+type BookingService {
+  """
+  service name in English language
+  """
+  name: String!
+  """
+  represents number of nights this customer has booked the service for.
+  """
+  nights: Int
+  """
+  represents number of persons this service is booked for
+  """
+  persons: Int
+  price_mode: String
+  price_per_unit: Int
+  total_price: Int
+}
+
+type BookingGuarantee {
+  """
+  masked credit card number
+  """
+  card_number: String
+  """
+  code, e.g. MC
+  """
+  card_type: String
+  cardholder_name: String
+  """
+  Masked CVV / CVC. For non-secure connections always equal to ***
+  """
+  cvv: String
+  """
+  MM/YYYY format
+  """
+  expiration_date: String
+  is_virtual: Boolean
+  meta: BookingGuaranteeMeta
+}
+"""
+Object with additional information about credit card.
+Please, keep in mind, this value available only for Booking.com bookings right now and some Expedia bookings.
+"""
+type BookingGuaranteeMeta {
+  virtual_card_currency_code: Currency
+  virtual_card_current_balance: String
+  """
+  Count of decimal places at provided balance value
+  """
+  virtual_card_decimal_places: String
+  virtual_card_effective_date: LocalDate
+  virtual_card_expiration_date: LocalDate
+}
+
+enum BookingTaxTypeEnum {
+  fee
+  tax
+  city_tax
+}
+
+type BookingTax {
+  """
+  Boolean marker to show included tax into Room Price or no
+  """
+  is_inclusive: Boolean
+  name: String
+  total_price: Int
+  type: BookingTaxTypeEnum
+  nights: Int
+  persons: Int
+  price_mode: String
+  price_per_unit: Int
+}
+
+type BookingRoom {
+  checkin_date: LocalDate!
+  checkout_date: LocalDate!
+  """
+  Associated Rate Plan identification record. Null value if the room is not mapped.
+  """
+  rate_plan_id: UUID
+  rate_plan: RatePlanResponse!
+  """
+  Associated Room Type identification record. Null if the room is not mapped.
+  """
+  room_type_id: UUID
+  room_type: RoomTypeResponse!
+  occupancy: BookingOccupancy!
+  guests: [BookingGuestInfo]
+  services: [BookingService]
+  taxes: [BookingTax]
+  amount: Int
+  days: [BookingRoomDay]
+  """
+  unique ID per Booking Room (room associated with booking)
+  """
+  booking_room_id: String
+  # deprecated:
+  # is_cancelled: Boolean!
+}
+
+type BookingRoomDay {
+  date: LocalDate!
+  amount: Int
+}
+
+type BookingRevisionAttribs {
+  id: UUID!
+  inserted_at: Timestamp!
+  property_id: UUID!
+  unique_id: String!
+  system_id: String!
+  # only for revision
+  booking_id: UUID
+  # only for booking
+  revision_id: UUID
+  ota_reservation_code: String
+  ota_name: String!
+  status: BookingRevisionStatusEnum!
+  rooms: [BookingRoom]
+  services: [BookingService]
+  guarantee: BookingGuarantee
+  customer: BookingCustomer
+  occupancy: BookingOccupancy
+  arrival_date: LocalDate!
+  departure_date: LocalDate!
+  arrival_hour: LocalTime
+  amount: Int
+  currency: Currency!
+  notes: String
+  """
+  Information about who should collect Payment.
+  Can be property if payment should be collected by property,
+  ota if guest already pay at OTA and null if value is not specified.
+  Usually null mean that property will collect payment.
+  """
+  payment_collect: BookingPaymentCollectEnum
+  """
+  Information about how payment should be collected.
+  Can be credit_card if booking have associated credit card for payment,
+  bank_transfer if OTA will pass payment through Bank Transfer,
+  and null if payment type is not specified.
+  """
+  payment_type: BookingPaymentTypeEnum
+  """
+  can extract some additional info from the OTA if necessary
+  """
+  raw_message: JSONObject
+}

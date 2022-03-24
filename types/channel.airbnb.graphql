@@ -1,0 +1,41 @@
+type AirbnbSettings {
+  # defined in rate_plan
+  derived_option: DerivedOption!
+  min_stay_type: AirbnbMinStayTypeEnum!
+  tokens: AirbnbTokens!
+  # 2 steps to update. First unlink channel - channel_rate_plan then link channel to rate_plan
+  # DELETE channels/:channel_id/mappings/:channel_rate_plan_id
+  # POST channels/:channel_id/mappings, with body:
+  # { mapping: { rate_plan_id: string, settings: {listing_id: string } } }
+  # this returns a channel_rate_plan object but WITHOUT rate_plan_id
+  mappingSettings: AirbnbMappingSettings!
+}
+
+enum AirbnbMinStayTypeEnum {
+  Arrival
+  Through
+}
+
+type AirbnbTokens {
+  access_token: String!
+  expires_at: Timestamp!
+  refresh_token: String!
+  user_id: BigInt!
+}
+
+type AirbnbMappingSettings {
+  """
+  probably related to the UI, controlled by Mapping / Settings / Flip View switch
+  """
+  reverseMapping: Boolean!
+  orderedMappingSchema: [AirbnbOrderedMappingSchema]
+}
+
+type AirbnbOrderedMappingSchema {
+  # e.g. listing_id in case of airbnb
+  id: String!
+  # e.g. Listing
+  title: String!
+  # e.g. integer
+  type: String!
+}

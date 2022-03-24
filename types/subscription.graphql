@@ -1,0 +1,85 @@
+type SubscriptionAttribs {
+  """
+  JSON Object with specific GET arguments for query.
+  """
+  request_params: JSONObject
+  """
+  JSON Object with request headers.
+  Note: If you would like use URL endpoint protected via authentication, you can define request headers at this field.
+  Example:{"Authorization": "Basic user:password"}
+  """
+  headers: JSONObject
+  """
+  This field represent active status of Subscription.
+  Only Subscriptions with is_active field equal to true value can receive notifications.
+  """
+  is_active: Boolean!
+  """
+  This field is a flag to send payload data in push callback.
+  If value is false we are call callback url without any information about changes.
+  """
+  send_data: Boolean!
+  id: UUID!
+  """
+  Non-empty string with event mask.
+  Note: Right now we have two events, what can trigger Subscription - ari and booking. You can specify different endpoints for different events using event_mask field or subscribe to any event by passing * as event_mask.
+  For ari event event mask support filtering by restriction, room type id and rate plan id. In that case, event mask should looks like: event:restrictions:room_type_ids:rate_plan_ids where restrictions, room_type_ids and rate_plan_ids can contain several comma separated values.
+  Real example to listen rate changes at Rate Plan with ID equal to 96a44e07-2158-43e4-8baa-8f6f56922ba8:
+  ari:rate:*:96a44e07-2158-43e4-8baa-8f6f56922ba8
+  """
+  event_mask: String!
+  """
+  This URL will be called via POST request when trigger event is happened.
+  """
+  callback_url: String!
+}
+
+type SubscriptionRelationships {
+  property: RelationshipResponse!
+}
+
+type Subscription {
+  """
+  always "subscription"
+  """
+  type: String!
+  id: UUID!
+  attributes: SubscriptionAttribs!
+  relationships: SubscriptionRelationships!
+  property: PropertyResponse!
+}
+
+input CreateUpdateSubscriptionInput {
+  property_id: UUID!
+  callback_url: String!
+  event_mask: String!
+  request_params: JSONObject
+  headers: JSONObject
+  is_active: Boolean
+  send_data: Boolean
+}
+
+type SubscriptionResponse {
+  data: Subscription!
+}
+
+type SubscriptionsResponse {
+  data: [Subscription]!
+  meta: Meta!
+}
+
+type Mutation {
+  ch_createSubscription(
+    subscription: CreateUpdateSubscriptionInput!
+  ): SubscriptionResponse!
+  ch_updateSubscription(
+    subscriptionId: UUID!
+    subscription: CreateUpdateSubscriptionInput!
+  ): SubscriptionResponse!
+  ch_deleteSubscription(subscriptionId: UUID!): MutationResponse!
+}
+
+type Query {
+  ch_subscriptions(pagination: PaginationInput): SubscriptionsResponse!
+  ch_subscription(subscriptionId: UUID!): SubscriptionResponse!
+}

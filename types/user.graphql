@@ -1,0 +1,15 @@
+type UsersResponse {
+  data: [User]!
+  meta: Meta
+}
+type UserAttribs {
+  id: UUID!
+  email: EmailAddress!
+  name: String!
+}
+type User {
+  attributes: UserAttribs!
+  id: UUID!
+  type: String!
+  relationships: Relationship
+}

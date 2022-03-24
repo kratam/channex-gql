@@ -1,0 +1,86 @@
+input RoomTypePhotoInput {
+  url: String
+  position: Int
+  description: String
+  author: String
+  kind: PhotoKind
+}
+
+input RoomTypeContentInput {
+  description: String
+  photos: [RoomTypePhotoInput]
+}
+
+type RoomTypeContent {
+  description: String
+  photos: [Photo]!
+}
+
+type RoomTypesResponse {
+  data: [RoomType]!
+  meta: Meta
+}
+
+type RoomTypeResponse {
+  data: RoomType!
+}
+
+type RoomTypeAttribs {
+  id: UUID!
+  title: String!
+  count_of_rooms: Int!
+  occ_adults: Int!
+  occ_children: Int!
+  occ_infants: Int!
+  default_occupancy: Int!
+  content: RoomTypeContent!
+}
+
+type RoomTypeRelationships {
+  property: RelationshipResponse!
+  facilities: RelationshipArrayResponseWithAttribs
+}
+
+type RoomType {
+  attributes: RoomTypeAttribs
+  id: UUID!
+  type: String!
+  relationships: RoomTypeRelationships!
+  property: PropertyResponse
+}
+
+input CreateRoomTypeInput {
+  title: String!
+  count_of_rooms: Int!
+  occ_adults: Int!
+  occ_children: Int!
+  occ_infants: Int!
+  default_occupancy: Int!
+  property_id: UUID!
+  facilities: [String]
+  content: RoomTypeContentInput
+}
+
+input UpdateRoomTypeInput {
+  id: UUID!
+  title: String
+  count_of_rooms: Int
+  occ_adults: Int
+  occ_children: Int
+  occ_infants: Int
+  default_occupancy: Int
+  facilities: [String]
+  content: RoomTypeContentInput
+}
+
+type Mutation {
+  ch_createRoomType(roomType: CreateRoomTypeInput!): RoomTypeResponse!
+  ch_updateRoomType(roomType: UpdateRoomTypeInput!): RoomTypeResponse!
+  ch_deleteRoomType(roomTypeId: UUID!): MutationResponse!
+}
+
+type Query {
+  ch_roomTypes(pagination: PaginationInput): RoomTypesResponse!
+  ch_roomType(roomTypeId: UUID!): RoomTypeResponse!
+  ch_roomTypesByPropertyId(propertyId: UUID!, pagination: PaginationInput): RoomTypesResponse!
+}

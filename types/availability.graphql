@@ -1,0 +1,54 @@
+type Mutation {
+  ch_updateAvailabilities(values: [UpdateAvailabilityInput]!): MutationResponse!
+}
+
+type Query {
+  ch_availabilities(filter: GetAvailabilityInput!): AvailabilityResponse!
+}
+
+input GetAvailabilityInput {
+  """
+  required if no date_lte/date_gte
+  """
+  date: LocalDate
+  """
+  required if no date
+  """
+  date_lte: LocalDate
+  """
+  required if no date
+  """
+  date_gte: LocalDate
+}
+
+type AvailabilityResponse {
+  data: [Availability!]!
+}
+
+type Availability {
+  room_type_id: UUID!
+  room_type: RoomTypeResponse!
+  date: LocalDate!
+  availability: Int!
+}
+
+input UpdateAvailabilityInput {
+  property_id: UUID!
+  room_type_id: UUID!
+  """
+  Required without date_from/date_to
+  """
+  date: LocalDate
+  """
+  required if date is null
+  """
+  date_from: LocalDate
+  """
+  required if date is null
+  """
+  date_to: LocalDate
+  """
+  non-negative number
+  """
+  availability: Int!
+}

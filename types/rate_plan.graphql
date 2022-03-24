@@ -1,0 +1,325 @@
+type RatePlanResponse {
+  data: RatePlan!
+  meta: Meta
+}
+
+type RatePlansResponse {
+  data: [RatePlan]!
+  meta: Meta
+}
+
+type RatePlanAttribs {
+  id: UUID!
+  title: String!
+  auto_rate_settings: AutoRateSettings
+  cancellation_policy_id: UUID
+  children_fee: Int!
+  infant_fee: Int!
+  currency: Currency!
+  inherit_rate: Boolean!
+  inherit_closed_to_arrival: Boolean!
+  inherit_closed_to_departure: Boolean!
+  inherit_stop_sell: Boolean!
+  inherit_min_stay_arrival: Boolean!
+  inherit_min_stay_through: Boolean!
+  inherit_max_stay: Boolean!
+  inherit_max_sell: Boolean!
+  inherit_max_availability: Boolean!
+  inherit_availability_offset: Boolean!
+  options: [OccupancyOptions]!
+  rate_mode: RateModeEnum!
+  sell_mode: SellModeEnum!
+  tax_set_id: UUID
+  meal_type: String!
+}
+
+type RatePlanRelationships {
+  parent_rate_plan: RelationshipResponse
+  room_type: RelationshipResponse!
+  property: RelationshipResponse!
+}
+
+type RatePlan {
+  attributes: RatePlanAttribs!
+  id: UUID!
+  type: String!
+  relationships: RatePlanRelationships!
+  property: PropertyResponse
+}
+
+type Query {
+  ch_ratePlans(
+    pagination: PaginationInput
+    filter: FilterInput
+  ): RatePlansResponse!
+  ch_ratePlan(ratePlanId: UUID!): RatePlanResponse!
+}
+
+type Mutation {
+  ch_createRatePlan(ratePlan: CreateRatePlanInput!): RatePlanResponse!
+  ch_updateRatePlan(ratePlan: UpdateRatePlanInput!): RatePlanResponse!
+  ch_deleteRatePlan(ratePlanId: UUID!): MutationResponse!
+}
+
+enum SellModeEnum {
+  per_room
+  per_person
+}
+
+enum RateModeEnum {
+  """
+  price is specified at options.rate field.
+  """
+  manual
+  """
+  price derived from parent_rate_plan for primary occupancy option.
+  """
+  derived
+  """
+  price derived from parent_rate_plan for each occupancy option.
+  """
+  cascade
+  """
+  price calculated automatically based at price for primary occupancy option and auto_rate_settings.
+  """
+  auto
+}
+
+type AutoRateSettings {
+  """
+  can be % or $
+  """
+  decrease_mode: String!
+  """
+  The value will be divided by 100, e.g. 150 = 1.50
+  """
+  decrease_value: Int!
+  """
+  can be % or $
+  """
+  increase_mode: String!
+  """
+  The value will be divided by 100, e.g. 150 = 1.50
+  """
+  increase_value: Int!
+}
+
+input AutoRateSettingsInput {
+  """
+  can be % or $
+  """
+  decrease_mode: String!
+  """
+  The value will be divided by 100, e.g. 150 = 1.50
+  """
+  decrease_value: Int!
+  """
+  can be % or $
+  """
+  increase_mode: String!
+  """
+  The value will be divided by 100, e.g. 150 = 1.50
+  """
+  increase_value: Int!
+}
+
+type DerivedOption {
+  """
+  Derived Options are rules to modify a value from Parent Rate Plan or Primary Occupancy Option.
+  These are tuples, where the first value can be:
+  increase_by_amount, increase_by_percent, decrease_by_amount, decrease_by_percent
+  *_percent options are applicable only for Rate restriction.
+  Example:
+  rate: [["increase_by_percent", "5.00"], ["increase_by_amount", "12.00"]]
+  """
+  rate: [[String]]
+}
+
+"""
+Derived Options are rules to modify a value from Parent Rate Plan or Primary Occupancy Option.
+These are tuples, where the first value can be:
+increase_by_amount, increase_by_percent, decrease_by_amount, decrease_by_percent
+*_percent options are applicable only for Rate restriction.
+Example:
+rate: [["increase_by_percent", "5.00"], ["increase_by_amount", "12.00"]]
+"""
+input DerivedOptionInput {
+  rate: [[String]]
+}
+
+type OccupancyOptions {
+  derived_option: DerivedOption
+  id: UUID!
+  is_primary: Boolean!
+  occupancy: Int!
+  rate: Int!
+  inherit_rate: Boolean!
+  inherit_closed_to_arrival: Boolean!
+  inherit_closed_to_departure: Boolean!
+  inherit_stop_sell: Boolean!
+  inherit_min_stay_arrival: Boolean!
+  inherit_min_stay_through: Boolean!
+  inherit_max_stay: Boolean!
+  inherit_max_sell: Boolean!
+  inherit_max_availability: Boolean!
+  inherit_availability_offset: Boolean!
+}
+
+input CreateOccupancyOptionsInput {
+  """
+  Count of guests allowed for current Occupancy Option.
+  Any positive integer value.
+  """
+  occupancy: Int!
+  """
+  Marker to show main Occupancy Option. Actual for derived options, because Main Option will be used as base point for calculations.
+  """
+  is_primary: Boolean!
+  """
+  Price for current Occupancy Option.
+  Field is required if sell_mode equal to manual or if current Option is_primary equal to true and you create non-derived Rate Plan.
+  Integer will be divided by 100, e.g. 10050 = 100.50
+  """
+  rate: Int!
+  """
+  Derived Options are rules to modify a value from Parent Rate Plan or Primary Occupancy Option.
+  These are tuples, where the first value can be:
+  increase_by_amount, increase_by_percent, decrease_by_amount, decrease_by_percent
+  *_percent options are applicable only for Rate restriction.
+  Example:
+  [["increase_by_percent", "5.00"], ["increase_by_amount", "12.00"]]
+  """
+  derived_option: DerivedOptionInput
+}
+
+input UpdateOccupancyOptionsInput {
+  """
+  Count of guests allowed for current Occupancy Option.
+  Any positive integer value.
+  """
+  occupancy: Int
+  """
+  Marker to show main Occupancy Option. Actual for derived options, because Main Option will be used as base point for calculations.
+  """
+  is_primary: Boolean
+  """
+  Price for current Occupancy Option.
+  Field is required if sell_mode equal to manual or if current Option is_primary equal to true and you create non-derived Rate Plan.
+  Integer will be divided by 100, e.g. 10050 = 100.50
+  """
+  rate: Int
+  """
+  Derived Options are rules to modify a value from Parent Rate Plan or Primary Occupancy Option.
+  These are tuples, where the first value can be:
+  increase_by_amount, increase_by_percent, decrease_by_amount, decrease_by_percent
+  *_percent options are applicable only for Rate restriction.
+  Example:
+  [["increase_by_percent", "5.00"], ["increase_by_amount", "12.00"]]
+  """
+  derived_option: DerivedOptionInput
+}
+
+input CreateRatePlanInput {
+  """
+  Any non-empty string with maximum length of 255 symbols. Should be unique per Property.
+  """
+  title: String!
+  property_id: UUID!
+  room_type_id: UUID!
+  parent_rate_plan_id: UUID
+  """
+  Array of Occupancy Option objects.
+  """
+  options: [CreateOccupancyOptionsInput]!
+  """
+  Note: Field is optional, by default system set Currency from associated Property.
+  Property can have Rate Plans with different Currencies.
+  """
+  currency: Currency
+  """
+  Per Room Rate Plan mean price is equal to any count of allowed guests. Price for 1 Guest will be same with price for 2 Guests.
+  Per Person Rate Plan used to create Rate Plans where price is calculated based at Guests count.
+  """
+  sell_mode: SellModeEnum
+  """
+  String, allows only the next values: manual, derived, auto, cascade.
+  Field is optional, by default the system will set to manual.
+  Note: Rate Mode field represent how to calculate rate for current Rate Plan. At Channex.io we have 4 possible ways to do that:
+  Manual - price is specified at options.rate field.
+  Derived - price derived from parent_rate_plan for primary occupancy option.
+  Cascade - price derived from parent_rate_plan for each occupancy option.
+  Auto - price calculated automatically based at price for primary occupancy option and auto_rate_settings.
+  Read more about Rate Modes and Derived options at our Rate Plan Section.
+  """
+  rate_mode: RateModeEnum
+  """
+  Object with Auto Rate Settings structure.
+  Field is optional generally, but required if rate_mode equal to auto.
+  This object contain information how to increase or decrease rate options from primary occupancy option.
+  """
+  auto_rate_settings: AutoRateSettingsInput
+
+  inherit_rate: Boolean
+  inherit_closed_to_arrival: Boolean
+  inherit_closed_to_departure: Boolean
+  inherit_stop_sell: Boolean
+  inherit_min_stay_arrival: Boolean
+  inherit_min_stay_through: Boolean
+  inherit_max_stay: Boolean
+  inherit_max_sell: Boolean
+  inherit_max_availability: Boolean
+  inherit_availability_offset: Boolean
+}
+
+input UpdateRatePlanInput {
+  id: UUID!
+  """
+  Any non-empty string with maximum length of 255 symbols. Should be unique per Property.
+  """
+  title: String
+  property_id: UUID
+  room_type_id: UUID
+  parent_rate_plan_id: UUID
+  """
+  Array of Occupancy Option objects.
+  """
+  options: [UpdateOccupancyOptionsInput]
+  """
+  Note: Field is optional, by default system set Currency from associated Property.
+  Property can have Rate Plans with different Currencies.
+  """
+  currency: Currency
+  """
+  Per Room Rate Plan mean price is equal to any count of allowed guests. Price for 1 Guest will be same with price for 2 Guests.
+  Per Person Rate Plan used to create Rate Plans where price is calculated based at Guests count.
+  """
+  sell_mode: SellModeEnum
+  """
+  String, allows only the next values: manual, derived, auto, cascade.
+  Field is optional, by default the system will set to manual.
+  Note: Rate Mode field represent how to calculate rate for current Rate Plan. At Channex.io we have 4 possible ways to do that:
+  Manual - price is specified at options.rate field.
+  Derived - price derived from parent_rate_plan for primary occupancy option.
+  Cascade - price derived from parent_rate_plan for each occupancy option.
+  Auto - price calculated automatically based at price for primary occupancy option and auto_rate_settings.
+  Read more about Rate Modes and Derived options at our Rate Plan Section.
+  """
+  rate_mode: RateModeEnum
+  """
+  Object with Auto Rate Settings structure.
+  Field is optional generally, but required if rate_mode equal to auto.
+  This object contain information how to increase or decrease rate options from primary occupancy option.
+  """
+  auto_rate_settings: AutoRateSettingsInput
+
+  inherit_rate: Boolean
+  inherit_closed_to_arrival: Boolean
+  inherit_closed_to_departure: Boolean
+  inherit_stop_sell: Boolean
+  inherit_min_stay_arrival: Boolean
+  inherit_min_stay_through: Boolean
+  inherit_max_stay: Boolean
+  inherit_max_sell: Boolean
+  inherit_max_availability: Boolean
+  inherit_availability_offset: Boolean
+}

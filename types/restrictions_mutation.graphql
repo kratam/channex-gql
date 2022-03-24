@@ -1,0 +1,67 @@
+enum RestrictionDaysEnum {
+  mo
+  tu
+  we
+  th
+  fr
+  sa
+  su
+}
+
+input UpdateRestrictionInput {
+  property_id: UUID!
+  rate_plan_id: UUID!
+  """
+  Required without date_from/date_to
+  """
+  date: LocalDate
+  """
+  required if date is null
+  """
+  date_from: LocalDate
+  """
+  required if date is null
+  """
+  date_to: LocalDate
+  """
+  List of days which should be affected by update.
+  To update each Monday in specific date range: ["mo"]
+  """
+  days: [RestrictionDaysEnum]
+  rate: PositiveInt
+  min_stay_arrival: PositiveInt
+  min_stay_through: PositiveInt
+  max_stay: PositiveInt
+  closed_to_arrival: Boolean
+  closed_to_departure: Boolean
+  stop_sell: Boolean
+  max_sell: Boolean
+
+  """
+  Subtract this number from the count of available rooms,
+  i.e. don't sell the last X room at this rate.
+  """
+  availability_offset: Int
+  max_availability: Int
+}
+
+type UpdateRestrictionsResponse {
+  data: [UpdateRestrictionsResponseData]
+  meta: UpdateRestrictionsResponseMeta
+}
+
+type UpdateRestrictionsResponseData {
+  id: UUID
+  type: String
+}
+
+type UpdateRestrictionsResponseMeta {
+  message: String
+  warnings: [JSONObject]
+}
+
+type Mutation {
+  ch_updateRestrictions(
+    values: [UpdateRestrictionInput]!
+  ): UpdateRestrictionsResponse!
+}

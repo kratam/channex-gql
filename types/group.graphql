@@ -1,0 +1,47 @@
+type GroupAttribs {
+  id: UUID!
+  title: String!
+}
+
+type GroupRelationships {
+  properties: RelationshipArrayResponseWithAttribs
+}
+
+type Group {
+  attributes: GroupAttribs!
+  properties: PropertiesResponse
+  id: UUID!
+  type: String!
+  relationships: GroupRelationships
+}
+type GroupsResponse {
+  data: [Group]!
+  meta: Meta
+}
+type GroupResponse {
+  data: Group!
+}
+
+type Query {
+  ch_groups(pagination: PaginationInput): GroupsResponse!
+  ch_group(groupId: UUID!): GroupResponse!
+}
+
+input CreateGroupInput {
+  title: String!
+}
+input UpdateGroupInput {
+  id: UUID!
+  title: String
+}
+
+type Mutation {
+  ch_createGroup(group: CreateGroupInput!): GroupResponse!
+  ch_updateGroup(group: UpdateGroupInput!): GroupResponse!
+  ch_deleteGroup(groupId: UUID!): MutationResponse!
+  ch_addPropertyToGroup(groupId: UUID!, propertyId: UUID): MutationResponse!
+  ch_removePropertyFromGroup(
+    groupId: UUID!
+    propertyId: UUID
+  ): MutationResponse!
+}

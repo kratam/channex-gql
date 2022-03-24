@@ -1,0 +1,19 @@
+type FacilitiesResponse {
+  data: [Facility]!
+  meta: Meta
+}
+
+type FacilityAttribs {
+  id: String!
+  title: String!
+}
+
+type Facility {
+  attributes: FacilityAttribs!
+  id: String!
+  type: String!
+}
+
+type Query {
+  ch_facilities: FacilitiesResponse!
+}
