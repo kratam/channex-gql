@@ -18,7 +18,7 @@ enum ReviewScoreCategoryEnum {
 
 type ReviewSingleScore {
   category: ReviewScoreCategoryEnum!
-  score: Float!
+  score: Float
 }
 
 type ReviewAggregatedSingleScore {
@@ -48,7 +48,7 @@ type ReviewAttribs {
   is_hidden: Boolean!
   is_replied: Boolean!
   ota: ReviewOtaEnum!
-  ota_reservation_id: String!
+  ota_reservation_id: String
   overall_score: Float!
   reply: ReviewReply
   raw_content: JSONObject
