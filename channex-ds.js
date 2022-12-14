@@ -123,10 +123,8 @@ class ChannexAPI extends RESTDataSource {
 
   // eslint-disable-next-line class-methods-use-this
   async willSendRequest(request) {
-    request.headers.set(
-      'user-api-key',
-      this.context.CHANNEX_API_KEY || process.env.CHANNEX_API_KEY
-    )
+    const apiKey = this.context.CHANNEX_API_KEY || process.env.CHANNEX_API_KEY
+    request.headers.set('user-api-key', apiKey)
     if (request.body)
       request.body = cloneDeepWith(request.body, fixWeekdayValues)
     // fs.writeFileSync(
@@ -137,7 +135,7 @@ class ChannexAPI extends RESTDataSource {
     // fs.writeFileSync(path.join(__dirname, `log-request.txt`), '\n\n', {
     //   flag: 'a+',
     // })
-    // this.logger.debug(`channex req`, { request })
+    // this.logger.dir(request)
     return request
   }
 
@@ -414,6 +412,29 @@ class ChannexAPI extends RESTDataSource {
 
   getRatePlan(ratePlanId) {
     return this.get(`rate_plans/${ratePlanId}`)
+  }
+
+  getReviews(pagination, filter, order) {
+    return this._makeListMethod(`reviews`, pagination, filter, order)
+  }
+
+  getReview(reviewId) {
+    return this.get(`reviews/${reviewId}`)
+  }
+
+  sendAirbnbReview(reviewId, review) {
+    return this.post(`reviews/${reviewId}/guest_review`, { review })
+  }
+
+  async replyReview(reviewId, reply) {
+    try {
+      await this.post(`reviews/${reviewId}/reply`, {
+        reply: { reply },
+      })
+      return { success: true }
+    } catch (error) {
+      throw error
+    }
   }
 
   getProperties(pagination, filter) {

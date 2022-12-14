@@ -1,0 +1,129 @@
+enum ReviewOtaEnum {
+  AirBNB
+  BookingCom
+}
+
+enum ReviewScoreCategoryEnum {
+  clean
+  facilities
+  location
+  services
+  staff
+  value
+  accuracy
+  communication
+  checkin
+  comfort
+}
+
+type ReviewSingleScore {
+  category: ReviewScoreCategoryEnum!
+  score: Float!
+}
+
+type ReviewAggregatedSingleScore {
+  category: ReviewScoreCategoryEnum!
+  count: Int!
+  score: Float!
+}
+
+type ReviewAggregatedScore {
+  id: UUID!
+  count: Int!
+  overall_score: Float!
+  scores: [ReviewAggregatedSingleScore]!
+}
+
+type ReviewReply {
+  reply: String!
+}
+
+type ReviewAttribs {
+  id: UUID!
+  content: String
+  guest_name: String!
+  inserted_at: Timestamp!
+  updated_at: Timestamp!
+  received_at: Timestamp!
+  is_hidden: Boolean!
+  is_replied: Boolean!
+  ota: ReviewOtaEnum!
+  ota_reservation_id: String!
+  overall_score: Float!
+  reply: ReviewReply
+  raw_content: JSONObject
+  public_review: String
+  private_feedback: String
+  scores: [ReviewSingleScore]!
+}
+
+type ReviewRelationships {
+  booking: RelationshipResponse!
+  channel: RelationshipResponse!
+  property: RelationshipResponse!
+}
+
+type Review {
+  type: String!
+  id: UUID!
+  attributes: ReviewAttribs!
+  relationships: ReviewRelationships!
+  property: PropertyResponse
+  booking: BookingResponse
+}
+
+type ReviewsResponse {
+  data: [Review]!
+  meta: Meta
+}
+
+type ReviewResponse {
+  data: Review!
+}
+
+type Query {
+  ch_reviews(
+    pagination: PaginationInput
+    filter: FilterInput
+    order: OrderInput
+  ): ReviewsResponse!
+  ch_review(reviewId: UUID!): ReviewResponse!
+}
+
+enum AirbnbReviewCategoryEnum {
+  respect_house_rules
+  communication
+  cleanliness
+}
+
+input AirbnbReviewScoreInput {
+  category: AirbnbReviewCategoryEnum!
+  rating: Int!
+}
+
+input SendAirbnbReviewInput {
+  scores: [AirbnbReviewScoreInput!]!
+  private_review: String
+  public_review: String
+  is_reviewee_recommended: Boolean!
+}
+
+type SendAirbnbReviewResponse {
+  success: Boolean!
+}
+
+input ReplyReviewInput {
+  reply: String!
+}
+
+type ReplyReviewResponse {
+  success: Boolean!
+}
+
+type Mutation {
+  ch_sendAirbnbReview(
+    reviewId: UUID!
+    review: SendAirbnbReviewInput!
+  ): SendAirbnbReviewResponse!
+  ch_replyReview(reviewId: UUID!, reply: String!): ReplyReviewResponse!
+}
