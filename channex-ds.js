@@ -8,6 +8,15 @@ const cloneDeepWith = require('lodash.clonedeepwith')
 const set = require('lodash.set')
 // const { logger: defaultLogger } = require('../utils/logger')
 
+/**
+ * reply.reply should be a text but sometimes it's null
+ */
+const fixNullReply = (review) => {
+  if (review?.attributes?.reply && !review.attributes.reply.reply)
+    review.attributes.reply = null
+  return review
+}
+
 const filterByRelations = (relation, id) => (item) =>
   item.relationships?.[relation]?.data.find((r) => r.id === id)
 
@@ -414,12 +423,21 @@ class ChannexAPI extends RESTDataSource {
     return this.get(`rate_plans/${ratePlanId}`)
   }
 
-  getReviews(pagination, filter, order) {
-    return this._makeListMethod(`reviews`, pagination, filter, order)
+  async getReviews(pagination, filter, order) {
+    const result = await this._makeListMethod(
+      `reviews`,
+      pagination,
+      filter,
+      order
+    )
+    result.data = result.data.map(fixNullReply)
+    return result
   }
 
-  getReview(reviewId) {
-    return this.get(`reviews/${reviewId}`)
+  async getReview(reviewId) {
+    const result = await this.get(`reviews/${reviewId}`)
+    result.data = fixNullReply(result.data)
+    return result
   }
 
   sendAirbnbReview(reviewId, review) {
