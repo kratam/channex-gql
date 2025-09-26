@@ -1,3 +1,15 @@
+"""
+Represents a value that can be either a single integer or an array of 7 integers (one for each day of the week).
+When an array is provided, it represents values for Monday through Sunday.
+"""
+scalar WeekdayIntValue
+
+"""
+Represents a value that can be either a single boolean or an array of 7 booleans (one for each day of the week).
+When an array is provided, it represents values for Monday through Sunday.
+"""
+scalar WeekdayBoolValue
+
 type RatePlanResponse {
   data: RatePlan!
   meta: Meta
@@ -31,6 +43,14 @@ type RatePlanAttribs {
   sell_mode: SellModeEnum!
   tax_set_id: UUID
   meal_type: String!
+  max_stay: WeekdayIntValue
+  min_stay_arrival: WeekdayIntValue
+  min_stay_through: WeekdayIntValue
+  closed_to_arrival: WeekdayBoolValue
+  closed_to_departure: WeekdayBoolValue
+  stop_sell: WeekdayBoolValue
+  ui_read_only: Boolean
+  is_derived: Boolean
 }
 
 type RatePlanRelationships {
@@ -269,6 +289,56 @@ input CreateRatePlanInput {
   inherit_max_sell: Boolean
   inherit_max_availability: Boolean
   inherit_availability_offset: Boolean
+
+  """
+  Maximum length of stay restriction.
+  Positive integer or array of 7 positive integers.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  max_stay: WeekdayIntValue
+  """
+  Minimum length of stay restriction if arrival is on this date.
+  Positive integer or array of 7 positive integers.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  min_stay_arrival: WeekdayIntValue
+  """
+  Minimum length of stay if this date is within the stay dates.
+  Positive integer or array of 7 positive integers.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  min_stay_through: WeekdayIntValue
+  """
+  Restriction that blocks the possibility to have arrival at this date.
+  Boolean or array of 7 booleans.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  closed_to_arrival: WeekdayBoolValue
+  """
+  Restriction that blocks the possibility to have departure at this date.
+  Boolean or array of 7 booleans.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  closed_to_departure: WeekdayBoolValue
+  """
+  If true, this rate plan is not available for sale.
+  Boolean or array of 7 booleans.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  stop_sell: WeekdayBoolValue
+  """
+  If true, this rate plan is read-only in the UI.
+  """
+  ui_read_only: Boolean
+  """
+  Indicates if this is a derived rate plan.
+  """
+  is_derived: Boolean
+
+  cancellation_policy_id: UUID
+  tax_set_id: UUID
+  children_fee: Int
+  infant_fee: Int
 }
 
 input UpdateRatePlanInput {
@@ -322,4 +392,54 @@ input UpdateRatePlanInput {
   inherit_max_sell: Boolean
   inherit_max_availability: Boolean
   inherit_availability_offset: Boolean
+
+  """
+  Maximum length of stay restriction.
+  Positive integer or array of 7 positive integers.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  max_stay: WeekdayIntValue
+  """
+  Minimum length of stay restriction if arrival is on this date.
+  Positive integer or array of 7 positive integers.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  min_stay_arrival: WeekdayIntValue
+  """
+  Minimum length of stay if this date is within the stay dates.
+  Positive integer or array of 7 positive integers.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  min_stay_through: WeekdayIntValue
+  """
+  Restriction that blocks the possibility to have arrival at this date.
+  Boolean or array of 7 booleans.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  closed_to_arrival: WeekdayBoolValue
+  """
+  Restriction that blocks the possibility to have departure at this date.
+  Boolean or array of 7 booleans.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  closed_to_departure: WeekdayBoolValue
+  """
+  If true, this rate plan is not available for sale.
+  Boolean or array of 7 booleans.
+  Single value applies to all days, array specifies per weekday (Mon-Sun).
+  """
+  stop_sell: WeekdayBoolValue
+  """
+  If true, this rate plan is read-only in the UI.
+  """
+  ui_read_only: Boolean
+  """
+  Indicates if this is a derived rate plan.
+  """
+  is_derived: Boolean
+
+  cancellation_policy_id: UUID
+  tax_set_id: UUID
+  children_fee: Int
+  infant_fee: Int
 }
