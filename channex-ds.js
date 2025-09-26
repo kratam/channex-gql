@@ -403,8 +403,50 @@ class ChannexAPI extends RESTDataSource {
     return this.get(`facilities/options`);
   }
 
-  createRatePlan({ ...ratePlan }) {
-    return this.post(`rate_plans`, { rate_plan: ratePlan });
+  async createRatePlan({ ...ratePlan }) {
+    let attempt = 0;
+    const maxAttempts = 3;
+    const originalTitle = ratePlan.title;
+
+    while (attempt < maxAttempts) {
+      try {
+        // Modify title for retry attempts
+        if (attempt > 0) {
+          ratePlan.title = `${originalTitle} (${attempt + 1})`;
+        }
+
+        const result = await this.post(`rate_plans`, { rate_plan: ratePlan });
+
+        // If successful, return the result
+        return result;
+      } catch (error) {
+        // Check if it's a duplicate title error
+        if (
+          error.extensions?.response?.body?.errors?.code ===
+            "validation_error" &&
+          error.extensions?.response?.body?.errors?.details?.title &&
+          error.extensions?.response?.body?.errors?.details?.title.some((msg) =>
+            msg.includes("Duplication in Rate Plan title is not allowed"),
+          )
+        ) {
+          attempt++;
+          if (attempt >= maxAttempts) {
+            // If we've exhausted all attempts, throw the error with modified message
+            throw ono({
+              ...error,
+              message: `Unable to create rate plan after ${maxAttempts} attempts. All names from "${originalTitle}" to "${originalTitle} (${maxAttempts})" are already in use.`,
+            });
+          }
+          // Continue to next attempt with modified name
+          this.logger.warn(
+            `Rate plan title "${ratePlan.title}" already exists, trying "${originalTitle} (${attempt + 1})"...`,
+          );
+        } else {
+          // If it's not a duplicate title error, throw it
+          throw error;
+        }
+      }
+    }
   }
 
   updateRatePlan({ id, ...ratePlan }) {
