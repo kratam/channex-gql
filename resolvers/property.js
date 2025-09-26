@@ -15,4 +15,4 @@ module.exports = {
     ch_deleteProperty: (root, { propertyId }, { dataSources }) =>
       dataSources.channexAPI.deleteProperty(propertyId),
   },
-}
+};

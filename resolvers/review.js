@@ -13,14 +13,14 @@ module.exports = {
   },
   Review: {
     property: (root, args, { dataSources }) => {
-      const propertyId = root.relationships?.property?.data?.id
-      if (propertyId) return dataSources.channexAPI.getProperty(propertyId)
-      else return null
+      const propertyId = root.relationships?.property?.data?.id;
+      if (propertyId) return dataSources.channexAPI.getProperty(propertyId);
+      else return null;
     },
     booking: (root, args, { dataSources }) => {
-      const bookingId = root.relationships?.booking?.data?.id
-      if (bookingId) return dataSources.channexAPI.getBooking(bookingId)
-      else return null
+      const bookingId = root.relationships?.booking?.data?.id;
+      if (bookingId) return dataSources.channexAPI.getBooking(bookingId);
+      else return null;
     },
   },
-}
+};

@@ -82,5 +82,8 @@ type Mutation {
 type Query {
   ch_roomTypes(pagination: PaginationInput): RoomTypesResponse!
   ch_roomType(roomTypeId: UUID!): RoomTypeResponse!
-  ch_roomTypesByPropertyId(propertyId: UUID!, pagination: PaginationInput): RoomTypesResponse!
+  ch_roomTypesByPropertyId(
+    propertyId: UUID!
+    pagination: PaginationInput
+  ): RoomTypesResponse!
 }

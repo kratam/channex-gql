@@ -11,7 +11,7 @@ module.exports = {
     ch_updateSubscription: (
       root,
       { subscriptionId, subscription },
-      { dataSources }
+      { dataSources },
     ) =>
       dataSources.channexAPI.createSubscription(subscriptionId, subscription),
   },
@@ -23,7 +23,7 @@ module.exports = {
         },
       },
       args,
-      { dataSources }
+      { dataSources },
     ) => propertyId && dataSources.channexAPI.getProperty(propertyId),
   },
-}
+};

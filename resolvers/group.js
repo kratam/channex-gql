@@ -8,8 +8,11 @@ module.exports = {
       dataSources.channexAPI.deleteGroup(groupId),
     ch_addPropertyToGroup: (root, { groupId, propertyId }, { dataSources }) =>
       dataSources.channexAPI.addPropertyToGroup(groupId, propertyId),
-    ch_removePropertyFromGroup: (root, { groupId, propertyId }, { dataSources }) =>
-      dataSources.channexAPI.removePropertyFromGroup(groupId, propertyId),
+    ch_removePropertyFromGroup: (
+      root,
+      { groupId, propertyId },
+      { dataSources },
+    ) => dataSources.channexAPI.removePropertyFromGroup(groupId, propertyId),
   },
   Query: {
     ch_groups: (root, { pagination }, { dataSources }) =>
@@ -21,4 +24,4 @@ module.exports = {
     properties: ({ id }, args, { dataSources }) =>
       dataSources.channexAPI.getPropertiesByGroupId(id),
   },
-}
+};

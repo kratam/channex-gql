@@ -3,12 +3,12 @@ module.exports = {
     ch_messagesByThread: (
       root,
       { threadId, pagination, order },
-      { dataSources }
+      { dataSources },
     ) => dataSources.channexAPI.messagesByThread(threadId, pagination, order),
     ch_messagesByBooking: (
       root,
       { bookingId, pagination, order },
-      { dataSources }
+      { dataSources },
     ) => dataSources.channexAPI.messagesByBooking(bookingId, pagination, order),
     ch_messageThreads: (root, { pagination, filter, order }, { dataSources }) =>
       dataSources.channexAPI.messageThreads(pagination, filter, order),
@@ -35,7 +35,7 @@ module.exports = {
         },
       },
       args,
-      { dataSources }
+      { dataSources },
     ) => bookingId && dataSources.channexAPI.getBooking(bookingId),
   },
-}
+};

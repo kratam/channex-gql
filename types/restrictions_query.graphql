@@ -54,7 +54,5 @@ type Restriction {
 }
 
 type Query {
-  ch_restrictions(
-    filter: GetRestrictionsFilterInput!
-  ): RestrictionsResponse
+  ch_restrictions(filter: GetRestrictionsFilterInput!): RestrictionsResponse
 }

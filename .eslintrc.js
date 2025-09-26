@@ -3,5 +3,5 @@ module.exports = {
     ecmaVersion: 2020,
   },
   env: { node: true },
-  extends: ['@kratam/eslint-config'],
-}
+  extends: ["@kratam/eslint-config"],
+};

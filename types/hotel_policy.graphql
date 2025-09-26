@@ -19,8 +19,12 @@ type Query {
 }
 
 type Mutation {
-  ch_createHotelPolicy(hotelPolicy: CreateHotelPolicyInput!): HotelPolicyResponse!
-  ch_updateHotelPolicy(hotelPolicy: UpdateHotelPolicyInput!): HotelPolicyResponse!
+  ch_createHotelPolicy(
+    hotelPolicy: CreateHotelPolicyInput!
+  ): HotelPolicyResponse!
+  ch_updateHotelPolicy(
+    hotelPolicy: UpdateHotelPolicyInput!
+  ): HotelPolicyResponse!
   ch_deleteHotelPolicy(hotelPolicyId: UUID!): MutationResponse!
 }
 

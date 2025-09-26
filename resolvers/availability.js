@@ -13,4 +13,4 @@ module.exports = {
     room_type: ({ room_type_id }, args, { dataSources }) =>
       dataSources.channexAPI.getRoomType(room_type_id),
   },
-}
+};

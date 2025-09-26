@@ -11,4 +11,4 @@ module.exports = {
     rate_plan: ({ rate_plan_id }, args, { dataSources }) =>
       dataSources.channexAPI.getRatePlan(rate_plan_id),
   },
-}
+};

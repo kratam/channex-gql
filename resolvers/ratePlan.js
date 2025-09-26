@@ -15,9 +15,9 @@ module.exports = {
   },
   RatePlan: {
     property: (root, args, { dataSources }) => {
-      const propertyId = root.relationships?.property?.data?.id
-      if (propertyId) return dataSources.channexAPI.getProperty(propertyId)
-      else return null
+      const propertyId = root.relationships?.property?.data?.id;
+      if (propertyId) return dataSources.channexAPI.getProperty(propertyId);
+      else return null;
     },
   },
-}
+};

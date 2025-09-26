@@ -5,7 +5,7 @@ module.exports = {
     ch_roomTypesByPropertyId: (
       root,
       { propertyId, pagination },
-      { dataSources }
+      { dataSources },
     ) =>
       dataSources.channexAPI.getRoomTypes(pagination, {
         property_id: propertyId,
@@ -23,9 +23,9 @@ module.exports = {
   },
   RoomType: {
     property: (root, args, { dataSources }) => {
-      const propertyId = root.relationships?.property?.data?.id
-      if (propertyId) return dataSources.channexAPI.getProperty(propertyId)
-      else return null
+      const propertyId = root.relationships?.property?.data?.id;
+      if (propertyId) return dataSources.channexAPI.getProperty(propertyId);
+      else return null;
     },
   },
-}
+};

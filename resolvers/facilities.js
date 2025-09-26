@@ -3,4 +3,4 @@ module.exports = {
     ch_facilities: (root, args, { dataSources }) =>
       dataSources.channexAPI.getFacilities(),
   },
-}
+};

@@ -13,4 +13,4 @@ module.exports = {
     ch_deleteHotelPolicy: (root, { hotelPolicyId }, { dataSources }) =>
       dataSources.channexAPI.deleteHotelPolicy(hotelPolicyId),
   },
-}
+};

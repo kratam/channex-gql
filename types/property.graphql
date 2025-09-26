@@ -147,7 +147,6 @@ input UpdatePropertyInput {
   hotel_policy_id: UUID
   default_cancellation_policy_id: UUID
   default_tax_set_id: UUID
-
 }
 
 type Query {

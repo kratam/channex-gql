@@ -33,7 +33,7 @@ module.exports = {
         },
       },
       args,
-      { dataSources }
+      { dataSources },
     ) => threadId && dataSources.channexAPI.messageThread(threadId),
   },
   BookingRoom: {
@@ -46,4 +46,4 @@ module.exports = {
     booking_revision: ({ revision_id }, args, { dataSources }) =>
       dataSources.channexAPI.getBookingRevision(revision_id),
   },
-}
+};
