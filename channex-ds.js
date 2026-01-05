@@ -113,13 +113,20 @@ class ChannexAPI extends RESTDataSource {
   constructor({
     baseURL = "https://app.channex.io/api/v1",
     logger = console,
+    requestTimeout = 90000, // 60 seconds default timeout
   } = {}) {
     super();
     this.baseURL = baseURL;
     this.logger = logger;
+    this.requestTimeout = requestTimeout;
   }
 
-  async didReceiveResponse(response) {
+  async didReceiveResponse(response, request) {
+    // Clear timeout to prevent memory leak
+    if (request?.timeoutId) {
+      clearTimeout(request.timeoutId);
+    }
+
     if (response.ok) {
       const parsed = await this.parseBody(response);
       const fixed = cloneDeepWith(parsed, fixValues);
@@ -136,6 +143,13 @@ class ChannexAPI extends RESTDataSource {
     request.headers.set("user-api-key", apiKey);
     if (request.body)
       request.body = cloneDeepWith(request.body, fixWeekdayValues);
+
+    // Set request timeout using AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
+    request.signal = controller.signal;
+    request.timeoutId = timeoutId;
+
     // fs.writeFileSync(
     //   path.join(__dirname, `log-request.txt`),
     //   JSON.stringify(request, null, '  '),
