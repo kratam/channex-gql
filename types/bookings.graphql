@@ -313,8 +313,13 @@ type BookingRevisionAttribs {
   guarantee: BookingGuarantee
   customer: BookingCustomer
   occupancy: BookingOccupancy
-  arrival_date: LocalDate!
-  departure_date: LocalDate!
+  # Channex returns null for these on some revisions (e.g. inquiries / not-yet-dated
+  # bookings). Declaring them non-null made the whole getBookingRevision query fail
+  # with "Cannot return null for non-nullable field" — keep them nullable to mirror
+  # reality. (The CreateBooking*Input types above keep `!` — departure IS required
+  # when we *send* a booking.)
+  arrival_date: LocalDate
+  departure_date: LocalDate
   arrival_hour: LocalTime
   amount: Int
   currency: Currency!

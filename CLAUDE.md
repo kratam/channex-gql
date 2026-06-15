@@ -83,3 +83,17 @@ channex-gql/
 - REST DataSource pattern a Channex API integrációhoz
 - Dinamikus fájl betöltés types és resolvers mappákból
 - JSON scalar típus használata flexibilis objektumokhoz
+
+## Séma nullability — válasz típusok kövessék a Channex valóságát
+
+A Channex REST API opcionálisan ad vissza mezőket. Ha egy **válasz** típusban
+non-null (`!`)-ként deklarálunk egy mezőt, amit a Channex elhagyhat, az egész
+query elhasal: `Cannot return null for non-nullable field …`. Konkrét eset:
+`BookingRevisionAttribs.arrival_date` / `departure_date` `LocalDate!` volt, de a
+Channex bizonyos revisionökre (pl. inquiry / dátum nélküli foglalás) `null`-t ad
+→ a teljes `getBookingRevision` megdőlt a gg3-functions revision-syncben.
+Javítva: ezek a **válasz**-mezők most `LocalDate` (nullable).
+
+> A `CreateBooking*Input` típusokban a `departure_date`/`arrival_date` MARAD
+> non-null — küldéskor (booking létrehozás) tényleg kötelező. Csak a
+> Channextől visszakapott válasz-típusokat lazítjuk.
