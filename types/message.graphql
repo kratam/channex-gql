@@ -2,6 +2,9 @@ enum MessageSenderEnum {
   guest
   property
   system
+  # OTA support agent (pl. "Airbnb Support" szálak) — a Channex ezt küldi a
+  # közvetlenül az OTA ügyintézővel folyó beszélgetésekben.
+  agent
 }
 
 type MessageAttribs {
