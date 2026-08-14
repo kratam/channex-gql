@@ -70,6 +70,28 @@ channex-gql/
 - Booking raw message JSON parsing
 - Reply.reply null érték javítás review-knál
 
+## ⚠️ Deploy — KÉZI, nincs automatizmus
+
+**A `main`-re pusholás önmagában NEM élesít semmit.** Ebben a repóban
+szándékosan nincs deploy-konfig: se Dockerfile, se GitHub Actions, se
+`deploy` script (a `package.json`-ban a placeholder `test`-en kívül nincs
+script). Aki azt hiszi, hogy a push kiviszi a változást, órákig fogja keresni,
+miért a régi kód fut.
+
+A szolgáltatás egy saját szerveren fut, **pm2** alatt, és az élesítés kézi:
+
+1. push a `main`-re (ettől még nem történik semmi),
+2. SSH a szerverre,
+3. `git pull` az ott lévő checkoutban,
+4. újraindítás pm2-vel.
+
+A szolgáltatás élesben: `https://channex.guest.guru` (a `/graphql` végponton),
+a `3.66.125.224` címen. A gg3-functions GraphQL kliensként hívja közvetlenül —
+**nem** Hasura remote schema.
+
+> 📝 Kitöltendő: a szerver SSH-neve, a checkout útvonala és a pm2 app neve.
+> Ezek egyetlen gépen sincsenek verziókövetve, ezért ide kell beírni.
+
 ## Fejlesztési környezet
 
 - GraphQL Playground elérhető development módban
