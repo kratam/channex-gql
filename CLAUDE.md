@@ -78,19 +78,35 @@ szándékosan nincs deploy-konfig: se Dockerfile, se GitHub Actions, se
 script). Aki azt hiszi, hogy a push kiviszi a változást, órákig fogja keresni,
 miért a régi kód fut.
 
-A szolgáltatás egy saját szerveren fut, **pm2** alatt, és az élesítés kézi:
+A szolgáltatás a **`mrz.guest.guru`** szerveren fut, **pm2** alatt. Élesítés:
 
-1. push a `main`-re (ettől még nem történik semmi),
-2. SSH a szerverre,
-3. `git pull` az ott lévő checkoutban,
-4. újraindítás pm2-vel.
+```bash
+# 1. push a main-re — ettől még NEM történik semmi
+ssh ubuntu@mrz.guest.guru
+cd ~/channex-gql
+git pull
+pm2 restart channex-gql      # lásd a watch-megjegyzést lent
+pm2 logs channex-gql --lines 50
+```
 
-A szolgáltatás élesben: `https://channex.guest.guru` (a `/graphql` végponton),
-a `3.66.125.224` címen. A gg3-functions GraphQL kliensként hívja közvetlenül —
-**nem** Hasura remote schema.
+| | |
+| -- | -- |
+| szerver | `ubuntu@mrz.guest.guru` (`3.66.125.224`) |
+| checkout | `/home/ubuntu/channex-gql` |
+| pm2 app | `channex-gql` (id 1, fork mode) |
+| élő végpont | `https://channex.guest.guru/graphql` |
 
-> 📝 Kitöltendő: a szerver SSH-neve, a checkout útvonala és a pm2 app neve.
-> Ezek egyetlen gépen sincsenek verziókövetve, ezért ide kell beírni.
+**pm2 `watch`:** ezen az appon a watch **be van kapcsolva** (a `pm2 status`
+`watching` oszlopa `enabled`, mérve 2026-08-14) — vagyis a `git pull` után a
+folyamat jellemzően magától újraindul. A `pm2 restart` így többnyire felesleges,
+de ártalmatlan; a `pm2 logs`-szal mindenképp ellenőrizd, hogy tényleg felállt.
+
+⚠️ **Ugyanez a gép futtat két másik szolgáltatást is** (`gg3-tools`, `viza`),
+tehát a pm2-t **egészében ne** állítsd le/indítsd újra — mindig névre szólóan
+dolgozz (`pm2 restart channex-gql`).
+
+A gg3-functions GraphQL kliensként hívja ezt közvetlenül — **nem** Hasura remote
+schema.
 
 ## Fejlesztési környezet
 
