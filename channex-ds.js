@@ -26,7 +26,8 @@ const filterByRelations = (relation, id) => (item) =>
  * We also want to convert "string-floats" to int, e.g. "1.00" => 100
  */
 const dateFixRe = /20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\d\d\d\d\d\d$/;
-const numberStringsFixRe = /^\d*\.\d\d$/;
+// Lemondásnál a Channex negatív összeget is küldhet; az előjel centben is megmarad.
+const numberStringsFixRe = /^-?\d*\.\d\d$/;
 const fixValues = (value) => {
   if (typeof value === "string" && dateFixRe.test(value)) return `${value}Z`;
   if (typeof value === "string" && numberStringsFixRe.test(value))

@@ -65,7 +65,9 @@ channex-gql/
 
 - REST endpoint wrapper `channex-ds.js`-ben
 - Automatikus dátum formátum javítás (hiányzó 'Z' hozzáadása)
-- String-float konverzió integer-re (pl. "1.00" → 100)
+- Előjeles string-float konverzió centben tárolt integerre (pl. "1.00" → 100,
+  "-3.68" → -368). A nyers `raw_message` JSON-szövegén belüli összegek nem
+  alakulnak át. Lemondásnál a Channex napi összege negatív is lehet; ne nullázd.
 - Hétköznapi értékek kezelése (7 napos array)
 - Booking raw message JSON parsing
 - Reply.reply null érték javítás review-knál
@@ -74,8 +76,8 @@ channex-gql/
 
 **A `main`-re pusholás önmagában NEM élesít semmit.** Ebben a repóban
 szándékosan nincs deploy-konfig: se Dockerfile, se GitHub Actions, se
-`deploy` script (a `package.json`-ban a placeholder `test`-en kívül nincs
-script). Aki azt hiszi, hogy a push kiviszi a változást, órákig fogja keresni,
+`deploy` script. Az `npm test` a válaszkonverzió és a GraphQL-revízió
+regressziós tesztjét futtatja (Node 16-on is). Aki azt hiszi, hogy a push kiviszi a változást, órákig fogja keresni,
 miért a régi kód fut.
 
 A szolgáltatás a **`mrz.guest.guru`** szerveren fut, **pm2** alatt. Élesítés:
@@ -96,10 +98,10 @@ pm2 logs channex-gql --lines 50
 | pm2 app | `channex-gql` (id 1, fork mode) |
 | élő végpont | `https://channex.guest.guru/graphql` |
 
-**pm2 `watch`:** ezen az appon a watch **be van kapcsolva** (a `pm2 status`
-`watching` oszlopa `enabled`, mérve 2026-08-14) — vagyis a `git pull` után a
-folyamat jellemzően magától újraindul. A `pm2 restart` így többnyire felesleges,
-de ártalmatlan; a `pm2 logs`-szal mindenképp ellenőrizd, hogy tényleg felállt.
+**pm2 `watch`:** a `pm2 jlist` szerint a figyelt útvonal `['node']`
+(mérve 2026-11-04), ezért a forrásfájlok frissítése utáni automatikus
+újraindulásra ne támaszkodj. Mindig indítsd újra név szerint a
+`channex-gql` folyamatot, és ellenőrizd a státuszt és a GraphQL-választ.
 
 ⚠️ **Ugyanez a gép futtat két másik szolgáltatást is** (`gg3-tools`, `viza`),
 tehát a pm2-t **egészében ne** állítsd le/indítsd újra — mindig névre szólóan
