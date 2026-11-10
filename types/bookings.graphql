@@ -321,6 +321,10 @@ type BookingRevisionAttribs {
   arrival_date: LocalDate
   departure_date: LocalDate
   arrival_hour: LocalTime
+  # Strukturált OTA-jutalék centben; a meta.payment_charge már a REST-ben cent.
+  ota_commission: Int
+  # Változatlan szolgáltatói metaadat (payment_charge, amount_type, cohost_payout).
+  meta: JSON
   amount: Int
   currency: Currency!
   notes: String
