@@ -69,6 +69,13 @@ channex-gql/
   "-3.68" → -368). A nyers `raw_message` JSON-szövegén belüli összegek nem
   alakulnak át. Lemondásnál a Channex napi összege negatív is lehet; ne nullázd.
 - Hétköznapi értékek kezelése (7 napos array)
+- A booking és revision közös `BookingRevisionAttribs` típusa az `amount`,
+  `ota_commission`, `payment_collect`, `payment_type` és `meta` mezőt is publikálja.
+  Az `ota_commission` nullable centérték (REST pénzsztringből egy konverzió);
+  a `meta` JSON, benne `payment_charge` már a REST-ben is cent (315 = 3,15 EUR).
+  A `meta.amount_type` és `meta.cohost_payout` értelmezés nélkül megy tovább.
+  Az alapértelmezett GraphQL-mezőfeloldás elég, nincs külön pénzkonverziós resolver.
+  Hiányzó/null jutalék nem azonos az explicit 0-val.
 - Booking raw message JSON parsing
 - Reply.reply null érték javítás review-knál
 
