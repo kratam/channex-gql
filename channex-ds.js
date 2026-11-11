@@ -1,7 +1,10 @@
 /* eslint-disable no-underscore-dangle */
 // const fs = require('fs')
 // const path = require('path')
+const { STATUS_CODES } = require("http");
 const { RESTDataSource } = require("apollo-datasource-rest");
+const { ApolloError } = require("apollo-server-core");
+const { reservePropertyRequest } = require("./property-limiter");
 const ono = require("@jsdevtools/ono");
 const qs = require("qs");
 const cloneDeepWith = require("lodash.clonedeepwith");
@@ -78,7 +81,7 @@ const transformBookingRoomsDays = (rooms) =>
       : room.days,
   }));
 
-const parseBookingRawMessage = (booking, logger) => {
+const parseBookingRawMessage = (booking, logger, path) => {
   if (booking?.attributes?.raw_message) {
     try {
       // eslint-disable-next-line no-param-reassign
@@ -87,15 +90,15 @@ const parseBookingRawMessage = (booking, logger) => {
       );
     } catch (error) {
       logger.error(
-        "CHANNEX_DS: unabe to parse raw_message",
-        booking.attributes.raw_message,
+        "CHANNEX_DS: invalid booking source JSON",
+        { path, revisionId: booking.id, bookingId: booking.attributes.booking_id },
       );
       // make sure we return JSONObject
       // eslint-disable-next-line no-param-reassign
       booking.attributes.raw_message = { raw: booking.attributes.raw_message };
     }
   } else {
-    logger.warn("no raw_message", { booking });
+    logger.warn("CHANNEX_DS: missing booking source", { path, revisionId: booking?.id, bookingId: booking?.attributes?.booking_id });
   }
 };
 
@@ -123,33 +126,60 @@ class ChannexAPI extends RESTDataSource {
   }
 
   async didReceiveResponse(response, request) {
-    // Clear timeout to prevent memory leak
-    if (request?.timeoutId) {
-      clearTimeout(request.timeoutId);
-    }
-
     if (response.ok) {
       const parsed = await this.parseBody(response);
       const fixed = cloneDeepWith(parsed, fixValues);
       // this.logger.silly(`channex response`, { converted })
       return fixed;
     }
-    const error = await this.errorFromResponse(response);
-    throw error;
+    // Az Apollo alapértelmezett hibája a teljes REST-bodyt publikálná.
+    let body;
+    try { body = await this.parseBody(response); } catch (_) { /* Hibás JSON mellett is megőrizzük a HTTP-státuszt. */ }
+    const errorCode = response.status === 401 ? "UNAUTHENTICATED" : response.status === 403 ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR";
+    const errors = body?.errors;
+    const code = typeof errors?.code === "string" && /^[a-z0-9_-]{1,64}$/i.test(errors.code) ? errors.code : undefined;
+    const knownTitles = ["Too Many Requests", "Bad Request", "Not Found", "Forbidden", "Unauthorized", "Validation Error", "Service Unavailable"];
+    const title = knownTitles.includes(errors?.title) ? errors.title : "Channex upstream error";
+    const path = new URL(response.url || "https://app.channex.io/").pathname;
+    const retryAfter = response.headers.get("Retry-After");
+    // A title-duplikáció belső kezelése csak a rögzített hibaszöveget igényli.
+    const duplicateTitle = errors?.details?.title?.some?.((value) => typeof value === "string" && value.includes("Duplication in Rate Plan title is not allowed"));
+    const summary = {
+      path, status: response.status, retryAfter,
+      body: { errors: { code, title, ...(duplicateTitle ? { details: { title: ["Duplication in Rate Plan title is not allowed!"] } } : {}) } },
+    };
+    this.logger.warn("CHANNEX_DS: upstream request failed", { path, status: response.status, code, title });
+    throw new ApolloError(`${response.status}: ${STATUS_CODES[response.status] || "Channex upstream error"}`, errorCode, { response: summary });
   }
+
+  // A RESTDataSource új Requestet készít, ezért az időzítő az egész fetch
+  // finally ágában zárul (a request.timeoutId nem jutna el a válaszkezelőhöz).
+  async fetch(init) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.requestTimeout);
+    try {
+      return await super.fetch({ ...init, signal: controller.signal });
+    } catch (error) {
+      if (error.extensions?.response?.status) throw error;
+      throw new ApolloError("503: Service Unavailable", "CHANNEX_REQUEST_FAILED", { response: { status: 503 } });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Az alap trace development módban a query stringet is konzolra írná.
+  trace(_request, action) { return action(); }
 
   // eslint-disable-next-line class-methods-use-this
   async willSendRequest(request) {
     const apiKey = this.context.CHANNEX_API_KEY || process.env.CHANNEX_API_KEY;
     request.headers.set("user-api-key", apiKey);
+    if (request.method === "POST" && ["restrictions", "availability"].includes(request.path?.replace(/^\/|\/$/g, ""))) {
+      const route = request.path.replace(/^\/|\/$/g, "");
+      reservePropertyRequest(route, (request.body?.values || []).map((value) => value.property_id).filter(Boolean));
+    }
     if (request.body)
       request.body = cloneDeepWith(request.body, fixWeekdayValues);
-
-    // Set request timeout using AbortController
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
-    request.signal = controller.signal;
-    request.timeoutId = timeoutId;
 
     // fs.writeFileSync(
     //   path.join(__dirname, `log-request.txt`),
@@ -236,7 +266,7 @@ class ChannexAPI extends RESTDataSource {
       response.data.attributes.rooms = transformBookingRoomsDays(
         response.data.attributes.rooms,
       );
-    parseBookingRawMessage(response?.data, this.logger);
+    parseBookingRawMessage(response?.data, this.logger, "booking_revisions/:id");
     return response;
   }
 
@@ -246,7 +276,7 @@ class ChannexAPI extends RESTDataSource {
       response.data.attributes.rooms = transformBookingRoomsDays(
         response.data.attributes.rooms,
       );
-    parseBookingRawMessage(response?.data, this.logger);
+    parseBookingRawMessage(response?.data, this.logger, "bookings/:id");
     return response;
   }
 
@@ -265,7 +295,7 @@ class ChannexAPI extends RESTDataSource {
             booking.attributes.rooms,
           );
         }
-        parseBookingRawMessage(booking, this.logger);
+        parseBookingRawMessage(booking, this.logger, "bookings");
         return booking;
       });
     }
@@ -286,7 +316,7 @@ class ChannexAPI extends RESTDataSource {
             booking.attributes.rooms,
           );
         }
-        parseBookingRawMessage(booking, this.logger);
+        parseBookingRawMessage(booking, this.logger, "booking_revisions");
         return booking;
       });
     }
@@ -307,7 +337,7 @@ class ChannexAPI extends RESTDataSource {
             booking.attributes.rooms,
           );
         }
-        parseBookingRawMessage(booking, this.logger);
+        parseBookingRawMessage(booking, this.logger, "booking_revisions/feed");
         return booking;
       });
     }
@@ -449,12 +479,12 @@ class ChannexAPI extends RESTDataSource {
             // If we've exhausted all attempts, throw the error with modified message
             throw ono({
               ...error,
-              message: `Unable to create rate plan after ${maxAttempts} attempts. All names from "${originalTitle}" to "${originalTitle} (${maxAttempts})" are already in use.`,
+              message: `Unable to create rate plan after ${maxAttempts} attempts: duplicate title.`,
             });
           }
           // Continue to next attempt with modified name
           this.logger.warn(
-            `Rate plan title "${ratePlan.title}" already exists, trying "${originalTitle} (${attempt + 1})"...`,
+            "CHANNEX_DS: duplicate rate plan title, retrying", { attempt },
           );
         } else {
           // If it's not a duplicate title error, throw it
