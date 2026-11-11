@@ -63,7 +63,61 @@ A mért ablakban nincs property-limit-átlépés. A **242 availability-hívás e
 az összesített route 300-as percplafonjának 81%-a; az összesített burst figyelendő.
 A limitszabály forrása: [Channex upcoming changes](https://docs.channex.io/upcoming-changes),
 2026-11-11-én olvasva (`.md` változat). Detect: 2026-11-16; block: 2026-12-14.
-A 429/Retry-After alakot a dokumentáció továbbra sem specifikálja.
+A 429/Retry-After alakot a dokumentáció nem specifikálja. Az éles review által
+azonosított válaszban a várakozás fejléc helyett a törzsben érkezik:
+`errors.code=http_too_many_requests`, `errors.details.retry_after=60`; a title
+`Too Many Requests: retry after <HTTP-dátum>` alakú lehet.
+
+## Kiegészített csúcsmérés: 2026-11-03–11-10, 17:00–17:04 UTC
+
+A korábbi 00–06 UTC ablak nem fedte az üzenetküldési csúcsot. A nyolc napon
+külön ellenőrzött időablak **17:00:00–17:05:00 UTC** (Budapest 18:00–18:05).
+A vizsgált üzenetcsoport a **17:00:00–17:01:00 UTC** között létrejött,
+`sender='property'`, `threads.channel='channex'` üzenetekből áll.
+
+| UTC-nap | Üzenet / első perc | Hasura-kísérlet az üzenetcsoportban | Channex 429-et tartalmazó hibaválasz | 17:05 előtt Channexre kiment | Utolsó Channex inserted_at (UTC) |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 2026-11-03 | 48 | 79 | 31 | 48 | 17:01:19.444 |
+| 2026-11-04 | 29 | 34 | 5 | 29 | 17:01:02.381 |
+| 2026-11-05 | 22 | 22 | 0 | 22 | 17:00:30.501 |
+| 2026-11-06 | 34 | 53 | 19 | 34 | 17:01:09.661 |
+| 2026-11-07 | 34 | 57 | 23 | 34 | 17:01:06.834 |
+| 2026-11-08 | 50 | 50 | 0 | 50 | 17:00:52.839 |
+| 2026-11-09 | 59 | 71 | 12 | 59 | 17:01:26.549 |
+| 2026-11-10 | 51 | 80 | 29 | 51 | 17:01:16.210 |
+| **Összesen** | **327** | **446** | **119** | **327** | — |
+
+A reviewer mind a nyolc napi darabszáma egyezik az önálló méréssel.
+A 327 üzenet mindegyikén van `messages.ch_id`, e-mail-fallback egyikhez sem került;
+a megfelelő `messages--insert` események mind delivered állapotúak, és sikeres
+HTTP200-kézbesítésük 17:05 előtt megtörtént. A Channexben tárolt küldési időpontok
+alapján már **17:01:27 előtt** minden nap mindegyik kiment. A 446 kézbesítési
+kísérlet és 327 végső siker különbsége 119; ugyanennyi invocation-válasz tartalmazza
+a Channex 429-et. **Hat napon volt 429**, november 5-én és 8-án e szűk csoportban nem.
+A 22–59/perc terhelés tehát már a publikált 100/perc alatt is adhat 429-et;
+a sensitive végpontok/egyéb korlátok pontos kiváltó oka ebből nem állapítható meg.
+
+Forrás és reprodukció (csak olvasás, minden `run_sql` esetén `read_only: true`):
+
+- GCP Cloud Logging: `resource.labels.service_name="gg3-functions"`,
+  `jsonPayload.message="sending message in channex"`, naponta a fenti időablak;
+  lekért mező csak `timestamp`, végiglapozva. Az első perces indítások sorban
+  **48,29,22,34,34,50,59,51**. Az ötperces ablak összes indítása 472, de ez az
+  első percben létrehozott üzenetcsoporton kívüli üzeneteket is tartalmaz; nem
+  tekintjük a 327 elemű csoport kísérletszámának.
+- Hasura `messages` + `threads`: darabszám, Channex/e-mail ID megléte, nulla
+  elküldetlen sor. `channex_messages.message_id` + `inserted_at`: a tényleges
+  upstream küldési időpontok aggregált ellenőrzése, ügyféladat nélkül.
+- Hasura `hdb_catalog.event_log` (`trigger_name='messages--insert'`,
+  `payload#>>'{data,new,id}'`) + `event_invocation_logs.event_id`: delivered,
+  próbálkozásszám, első HTTP200 időpontja. A 429 oszlop a válaszban szereplő
+  `http_too_many_requests`/`Too Many Requests` alapján számol; a Hasura felé a
+  functions hibája HTTP500 lehet, nem közvetlen HTTP429.
+- A reprodukálható aggregáló SQL: [channex-message-peak.sql](channex-message-peak.sql).
+  A szűk eseményhalmaz egyszer materializált, hogy ne ismételjen nagy JSON-path
+  olvasást. A mérés csak darabszámot és időpontot ad vissza.
+
+Az üzenetek szétterítése külön kör; ütemezés vagy cron nem változik.
 
 ## Kódból igazolt kockázat és védelem
 
@@ -86,7 +140,12 @@ limiter kell. A gatewayt megkerülő klienseket ez a védelem nem számlálja.
 A gateway nem retry-zik. HTTP 429 és opcionális `Retry-After` a GraphQL
 `extensions.response.{status,retryAfter}` mezőiben jut tovább, a régi hibakódot és
 404/422 státuszszöveget megőrzi. A functions kliens maximum 3-szor retry-zik
-429-re, másodperc vagy HTTP-date fejléc szerint; fejléc nélkül 1/2/4 s.
+429-re. A gateway elsőként a Retry-After fejlécet veszi; ennek hiányában a
+számszerű `errors.details.retry_after` értékét normalizálja másodpercre, végső
+tartalékként a title `retry after <HTTP-dátum>` részét HTTP-date-re. A nyers title
+és details értékek nem jutnak tovább. Csak ezek hiányában lesz 1/2/4 s backoff.
+A törzsben kapott 60 s a 30 s mutációs keret fölött van, ezért a kliens azonnal
+hibázik, és nem indít 1/2/4 s múlva újabb Channex-hívásokat.
 A hálózat és várakozás együtt querynél **15 s**, mutációnál **30 s**, AbortSignal-lal.
 Túl hosszú Retry-After esetén rögtön látható hibával áll meg. A telepítési script
 Cloud Function időkorlátja 90 s (`scripts/deploy-function.sh`), a klienshívás kerete
@@ -96,11 +155,26 @@ hitelesítés nem adott hozzáférést; infra/auth/env nem változott.
 Mutációt csak 429 vagy bizonyított kapcsolódás előtti hiba után ismétel.
 A gateway `ECONNREFUSED`, `ENOTFOUND`, `connect ETIMEDOUT` esetén
 `CHANNEX_CONNECT_FAILED`/503-at ad; ECONNRESET, socket hang up, read timeout és
-abort esetén `CHANNEX_REQUEST_AMBIGUOUS`/502-t. Utóbbinál nincs automatikus
-újraküldés, üzenetnél e-mail-fallback sincs: a Channex már végrehajthatta a POST-ot.
+abort esetén `CHANNEX_REQUEST_AMBIGUOUS`/502-t. Utóbbinál nincs kliensoldali
+újrapróbálás, üzenetnél e-mail-fallback sincs: a Channex már végrehajthatta a POST-ot.
+A valódi, a gateway által megkapott Channex HTTP503 külön
+`CHANNEX_UPSTREAM_UNAVAILABLE` kódot kap; a mutáció helyben ezt sem retry-zza,
+de az e-mail-fallback megengedett. A proxy nyers HTTP502-jéből nem bizonyítható,
+hogy a gateway/Channex biztosan nem dolgozta fel a kérést, ezért az ambiguous marad.
+
+**A külső Hasura-retry ettől független, változatlan:** a `Route.handleError` a
+`CHANNEX_REQUEST_AMBIGUOUS` hibát HTTP500-ra fordítja. A `messages--insert`
+Hasura-esemény `num_retries: 3`, `interval_sec: 30` beállítással legfeljebb háromszor
+újrafuttatja a `messages/send` kezelőt (első kísérlet + 3 retry). Az Error
+`retry:false` mezője ezt a Hasura-konfigurációt nem kapcsolja ki. Emiatt bizonytalan
+küldési kimenetelnél **dupla üzenet továbbra is lehetséges, ahogy eddig is**;
+a kért javítás ezt a viselkedést nem módosítja.
 A functions→gateway undici kapcsolat hibáját a `TypeError('fetch failed').cause.code`
 jelzi (`UND_ERR_CONNECT_TIMEOUT`, `ECONNREFUSED`, `ETIMEDOUT`, `ENOTFOUND`).
 Querynél az eddigi 503/ETIMEDOUT retry megmarad; gateway ambiguous kódnál nincs retry.
+A küldés siker- és hibalogja kizárólag azonosítókat, törzshosszt és szűrt gépi
+hibamezőket tartalmaz; a teljes sendResult, címzett, msg.body és failedMessage.body
+nem kerül a naplóba.
 A gateway validációs `details` kulcsai `detailFields` alatt kereshetők, a nyers
 értékek nem kerülnek logba/hibába. A végső hibából eltűnik
 a teljes request/response és a nyers hibaüzenet; 404/not_supported felismerhető marad.

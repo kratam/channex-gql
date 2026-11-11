@@ -135,13 +135,24 @@ class ChannexAPI extends RESTDataSource {
     // Az Apollo alapértelmezett hibája a teljes REST-bodyt publikálná.
     let body;
     try { body = await this.parseBody(response); } catch (_) { /* Hibás JSON mellett is megőrizzük a HTTP-státuszt. */ }
-    const errorCode = response.status === 401 ? "UNAUTHENTICATED" : response.status === 403 ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR";
+    const errorCode = response.status === 503 ? "CHANNEX_UPSTREAM_UNAVAILABLE" : response.status === 401 ? "UNAUTHENTICATED" : response.status === 403 ? "FORBIDDEN" : "INTERNAL_SERVER_ERROR";
     const errors = body?.errors;
     const code = typeof errors?.code === "string" && /^[a-z0-9_-]{1,64}$/i.test(errors.code) ? errors.code : undefined;
     const knownTitles = ["Too Many Requests", "Bad Request", "Not Found", "Forbidden", "Unauthorized", "Validation Error", "Service Unavailable"];
     const title = knownTitles.includes(errors?.title) ? errors.title : "Channex upstream error";
     const path = new URL(response.url || "https://app.channex.io/").pathname;
-    const retryAfter = response.headers.get("Retry-After");
+    let retryAfter = response.headers.get("Retry-After");
+    if (!retryAfter && response.status === 429) {
+      const seconds = errors?.details?.retry_after;
+      if ((typeof seconds === "number" || (typeof seconds === "string" && /^\d+(\.\d+)?$/.test(seconds))) && Number.isFinite(Number(seconds)) && Number(seconds) >= 0) {
+        retryAfter = String(Number(seconds));
+      } else if (typeof errors?.title === "string") {
+        const retryDate = errors.title.match(/retry after\s+(.+)$/i)?.[1];
+        const at = retryDate ? Date.parse(retryDate) : NaN;
+        // A nyers title helyett kizárólag a normalizált dátum kerül tovább.
+        if (Number.isFinite(at)) retryAfter = new Date(at).toUTCString();
+      }
+    }
     // A title-duplikáció belső kezelése csak a rögzített hibaszöveget igényli.
     const duplicateTitle = errors?.details?.title?.some?.((value) => typeof value === "string" && value.includes("Duplication in Rate Plan title is not allowed"));
     const detailFields = Object.keys(errors?.details || {}).filter((field) => /^[a-z_][a-z0-9_.\[\]-]{0,63}$/i.test(field));
