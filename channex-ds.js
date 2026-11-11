@@ -147,7 +147,7 @@ class ChannexAPI extends RESTDataSource {
     const detailFields = Object.keys(errors?.details || {}).filter((field) => /^[a-z_][a-z0-9_.\[\]-]{0,63}$/i.test(field));
     const summary = {
       path, status: response.status, retryAfter,
-      body: { errors: { code, title, detailFields, ...(duplicateTitle ? { details: { title: ["Duplication in Rate Plan title is not allowed!"] } } : {}) } },
+      body: { errors: { code, title, detailFields, ...(duplicateTitle ? { duplicateTitle: true } : {}) } },
     };
     this.logger.warn("CHANNEX_DS: upstream request failed", { path, status: response.status, code, title, detailFields });
     throw new ApolloError(`${response.status}: ${STATUS_CODES[response.status] || "Channex upstream error"}`, errorCode, { response: summary });
@@ -478,10 +478,7 @@ class ChannexAPI extends RESTDataSource {
         if (
           error.extensions?.response?.body?.errors?.code ===
             "validation_error" &&
-          error.extensions?.response?.body?.errors?.details?.title &&
-          error.extensions?.response?.body?.errors?.details?.title.some((msg) =>
-            msg.includes("Duplication in Rate Plan title is not allowed"),
-          )
+          error.extensions?.response?.body?.errors?.duplicateTitle === true
         ) {
           attempt++;
           if (attempt >= maxAttempts) {

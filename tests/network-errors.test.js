@@ -35,6 +35,23 @@ async function main() {
   });
   assert.deepEqual(logs[0][1].detailFields,['arrival_date','rate_plan_id']);
   assert(!JSON.stringify(logs).includes('SYNTHETIC-PRIVATE'));
+  const duplicate = new Response(JSON.stringify({errors:{code:'validation_error',details:{title:['Duplication in Rate Plan title is not allowed!']}}}),{status:422,headers:{'Content-Type':'application/json'}});
+  await assert.rejects(api.didReceiveResponse(duplicate,{}),error=>{
+    assert.deepEqual(error.extensions.response.body.errors.detailFields,['title']);
+    assert.equal(error.extensions.response.body.errors.details,undefined);
+    return true;
+  });
+  const titles=[];
+  const duplicateApi=new ChannexAPI({logger:{warn(){}}});
+  duplicateApi.context={CHANNEX_API_KEY:'synthetic'};
+  duplicateApi.httpCache={fetch:async request=>{
+    titles.push((await request.json()).rate_plan.title);
+    return titles.length===1
+      ? new Response(JSON.stringify({errors:{code:'validation_error',details:{title:['Duplication in Rate Plan title is not allowed!']}}}),{status:422,headers:{'Content-Type':'application/json'}})
+      : new Response('{"data":{"id":"plan-test"}}',{status:200,headers:{'Content-Type':'application/json'}});
+  }};
+  await duplicateApi.createRatePlan({title:'synthetic-plan'});
+  assert.deepEqual(titles,['synthetic-plan','synthetic-plan (2)']);
   console.log('OK: 6 hálózati hibaág valódi GraphQL-mutációval; 422 mezőnevek értékek nélkül');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
