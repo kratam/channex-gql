@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/response-values.test.js && node tests/rate-limit.test.js"
+    "test": "node tests/response-values.test.js && node tests/rate-limit.test.js && node tests/network-errors.test.js"
   },
   "keywords": [],
   "author": "",

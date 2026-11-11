@@ -117,7 +117,7 @@ class ChannexAPI extends RESTDataSource {
   constructor({
     baseURL = "https://app.channex.io/api/v1",
     logger = console,
-    requestTimeout = 90000, // 60 seconds default timeout
+    requestTimeout = 90000, // Alapértelmezetten 90 másodperc.
   } = {}) {
     super();
     this.baseURL = baseURL;
@@ -144,11 +144,12 @@ class ChannexAPI extends RESTDataSource {
     const retryAfter = response.headers.get("Retry-After");
     // A title-duplikáció belső kezelése csak a rögzített hibaszöveget igényli.
     const duplicateTitle = errors?.details?.title?.some?.((value) => typeof value === "string" && value.includes("Duplication in Rate Plan title is not allowed"));
+    const detailFields = Object.keys(errors?.details || {}).filter((field) => /^[a-z_][a-z0-9_.\[\]-]{0,63}$/i.test(field));
     const summary = {
       path, status: response.status, retryAfter,
-      body: { errors: { code, title, ...(duplicateTitle ? { details: { title: ["Duplication in Rate Plan title is not allowed!"] } } : {}) } },
+      body: { errors: { code, title, detailFields, ...(duplicateTitle ? { details: { title: ["Duplication in Rate Plan title is not allowed!"] } } : {}) } },
     };
-    this.logger.warn("CHANNEX_DS: upstream request failed", { path, status: response.status, code, title });
+    this.logger.warn("CHANNEX_DS: upstream request failed", { path, status: response.status, code, title, detailFields });
     throw new ApolloError(`${response.status}: ${STATUS_CODES[response.status] || "Channex upstream error"}`, errorCode, { response: summary });
   }
 
@@ -161,7 +162,15 @@ class ChannexAPI extends RESTDataSource {
       return await super.fetch({ ...init, signal: controller.signal });
     } catch (error) {
       if (error.extensions?.response?.status) throw error;
-      throw new ApolloError("503: Service Unavailable", "CHANNEX_REQUEST_FAILED", { response: { status: 503 } });
+      const cause = error.cause || error;
+      const code = cause.code || error.code;
+      const beforeConnect = ["ECONNREFUSED", "ENOTFOUND"].includes(code) ||
+        (code === "ETIMEDOUT" && /connect ETIMEDOUT/.test(cause.message || error.message));
+      // Kapcsolódási hiba előtt a POST biztosan nem ért célba. Megszakadt
+      // kapcsolatnál/abortnál viszont a Channex már végrehajthatta a műveletet.
+      throw beforeConnect
+        ? new ApolloError("503: Service Unavailable", "CHANNEX_CONNECT_FAILED", { response: { status: 503 } })
+        : new ApolloError("Channex request outcome unknown", "CHANNEX_REQUEST_AMBIGUOUS", { response: { status: 502 } });
     } finally {
       clearTimeout(timer);
     }

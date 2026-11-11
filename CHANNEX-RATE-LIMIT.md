@@ -71,7 +71,8 @@ A régi `rounds < MAX_ROUNDS` feltétel 0-ról induló listával **16** kört en
 ha a futás 40 mp alatt maradt; szintetikus regresszió igazolja. Egy property minden
 körben szerepelhet, ezért 10 fölötti restrictions-kísérlet lehetséges, noha a mért
 ablakban a property-maximum csak 5. A javítás maximum **15 valódi kört** enged,
-sikertelen property után a batcher megáll, a következő cron pótol.
+429-es property-hiba után a batcher megáll, a következő cron pótol. Más
+property-hiba (például 422) nem állítja le a következő köröket.
 
 A gateway közös, processszintű számlálója propertynként és route-onként legfeljebb
 **10 tényleges kísérletet** enged gördülő 60 másodpercben. A hibás upstream kísérlet
@@ -86,9 +87,22 @@ A gateway nem retry-zik. HTTP 429 és opcionális `Retry-After` a GraphQL
 `extensions.response.{status,retryAfter}` mezőiben jut tovább, a régi hibakódot és
 404/422 státuszszöveget megőrzi. A functions kliens maximum 3-szor retry-zik
 429-re, másodperc vagy HTTP-date fejléc szerint; fejléc nélkül 1/2/4 s.
-A hálózat és várakozás együtt legfeljebb **15 s**, AbortSignal-lal. Túl hosszú
-Retry-After esetén rögtön látható hibával áll meg. Az eddigi 503/ETIMEDOUT
-várakozások ugyanebben az egyetlen időkeretben maradnak. A végső hibából eltűnik
+A hálózat és várakozás együtt querynél **15 s**, mutációnál **30 s**, AbortSignal-lal.
+Túl hosszú Retry-After esetén rögtön látható hibával áll meg. A telepítési script
+Cloud Function időkorlátja 90 s (`scripts/deploy-function.sh`), a klienshívás kerete
+ennél rövidebb. Az élő timeout-metadata lekérdezéséhez a rendelkezésre álló
+hitelesítés nem adott hozzáférést; infra/auth/env nem változott.
+
+Mutációt csak 429 vagy bizonyított kapcsolódás előtti hiba után ismétel.
+A gateway `ECONNREFUSED`, `ENOTFOUND`, `connect ETIMEDOUT` esetén
+`CHANNEX_CONNECT_FAILED`/503-at ad; ECONNRESET, socket hang up, read timeout és
+abort esetén `CHANNEX_REQUEST_AMBIGUOUS`/502-t. Utóbbinál nincs automatikus
+újraküldés, üzenetnél e-mail-fallback sincs: a Channex már végrehajthatta a POST-ot.
+A functions→gateway undici kapcsolat hibáját a `TypeError('fetch failed').cause.code`
+jelzi (`UND_ERR_CONNECT_TIMEOUT`, `ECONNREFUSED`, `ETIMEDOUT`, `ENOTFOUND`).
+Querynél az eddigi 503/ETIMEDOUT retry megmarad; gateway ambiguous kódnál nincs retry.
+A gateway validációs `details` kulcsai `detailFields` alatt kereshetők, a nyers
+értékek nem kerülnek logba/hibába. A végső hibából eltűnik
 a teljes request/response és a nyers hibaüzenet; 404/not_supported felismerhető marad.
 
 Sikertelen restrictions/availability után nincs `rate_date_sync`/`synced_at`-írás;
@@ -99,21 +113,25 @@ következő futása új feldolgozási kísérlet, nem egymásra rétegzett klien
 
 A meglévő revision-feed futás végén a monitor a feed és a DB legalább **30 perces**
 feldolgozatlan tételeinek unióját jelzi, a futásban sikeresen feldolgozott ID-k nélkül.
-Feed-lekérési hiba mellett a DB-ellenőrzés akkor is lefut. Új cron/séma/env nincs.
-A meglévő belső Slack-riasztási út kap egy összesítőt, kizárólag revision ID-kkel.
+A DB-ág kizárólag az **utolsó 7 napban** beérkezett, feldolgozatlan revisionökre
+szűr: `received_at > now() - interval '7 days'`. Feed-lekérési hiba mellett a
+DB-ellenőrzés akkor is lefut. Új cron/séma/env nincs. A meglévő belső Slack-riasztási
+út kap egy összesítőt, kizárólag revision ID-kkel.
 
 Tartós, instance-ok közötti elnyomás: a meglévő `GCLOUD_NTAK_BUCKET_NAME` bucket
-**`channex/revision-alerts/`** prefixén ID-hash + időpont; GCS-generációfeltételes írás.
-Revisionenként gördülő **24 óránként legfeljebb egy jelzési kísérlet**. A foglalás a
+**`channex/revision-alerts/<ID-hash>/<YYYY-MM-DD>.json`** objektuma UTC-naponként.
+Kizárólag létrehozás (`ifGenerationMatch=0`), nincs metadata-olvasás vagy felülírás;
+megőrzési szabály mellett is működhet. A 412 azt jelenti, hogy aznap már van jelölő.
+Revisionenként **UTC-naponként legfeljebb egy jelzési kísérlet**. A foglalás a
 Slack-küldés előtt történik: bizonytalan timeout után nincs percenkénti duplikáció.
 Sikertelen Slack-küldés/tárhiba külön hibalog, a revision-feldolgozást nem blokkolja.
-Küldési hiba után a foglalás legfeljebb 24h-ig elnyomja az új kísérletet; ez
-szándékos at-most-once kísérleti garancia, nem pontosan egyszeri kézbesítés.
+Küldési hiba után a foglalás az UTC-nap végéig elnyomja az új kísérletet; ez
+at-most-once kísérleti garancia, nem pontosan egyszeri kézbesítés.
 
-Read-only DB-visszamérés 2026-11-11 06:41 UTC körül: **10** régi, hibás,
-feldolgozatlan revision (2026-06-15–2026-10-13), mindnek van `error` értéke.
-Élesítéskor az első monitor ezekről is jelez. Nem történt adatjavítás vagy ack;
-a feedbeli aktuális ack-állapotukat ez a DB-olvasás nem állapítja meg.
+A 2026-11-11-i korábbi read-only mérés 10 régi, hibás DB-sort talált június–októberi
+beérkezéssel. A koordinátor Ⓑ döntése szerint ezekre nincs egyszeri összesítő;
+a reviewer a helyes üzleti állapotukat élesben ellenőrizte. A hét napos DB-ablak
+kizárja őket. A worker nem végzett DB-írást vagy Channex ackot.
 
 ## Élesítési sorrend és ellenőrzés
 
@@ -121,7 +139,7 @@ a feedbeli aktuális ack-állapotukat ez a DB-olvasás nem állapítja meg.
    szerint restart; 60 s startup-ablak kivárása. Ellenőrizendő: normál GraphQL
    olvasás és process-státusz; éles 429-et teszt céljából nem generálunk.
 2. **gg3-functions** szokásos main → Cloud Build, a meglevő kapukkal.
-3. Hibalog és revision-riasztás visszamérése; az első 10 történeti ID értékelése.
+3. Hibalog és a hét napos ablakra szűrt revision-riasztás visszamérése.
    Cron, DB-séma, Hasura metadata, API-kulcs és env nem változik.
 
 A workerek két PR-t adnak át. A merge, élesítés és éles visszamérés a koordinátoré.
