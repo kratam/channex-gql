@@ -82,9 +82,9 @@ channex-gql/
 ## ⚠️ Deploy — KÉZI, nincs automatizmus
 
 **A `main`-re pusholás önmagában NEM élesít semmit.** Ebben a repóban
-szándékosan nincs deploy-konfig: se Dockerfile, se GitHub Actions, se
-`deploy` script. Az `npm test` a válaszkonverzió és a GraphQL-revízió
-regressziós tesztjét futtatja (Node 16-on is). Aki azt hiszi, hogy a push kiviszi a változást, órákig fogja keresni,
+nincs deploy-konfig: se Dockerfile, se `deploy` script. A GitHub Actions
+CI kizárólag `npm ci` + `npm test` ellenőrzést futtat Node 22-n, nem élesít. Az `npm test` a válaszkonverzió, a GraphQL-revízió, a 429-kezelés,
+a property-limit és a PII-mentes hibák regressziós tesztjeit futtatja. Aki azt hiszi, hogy a push kiviszi a változást, órákig fogja keresni,
 miért a régi kód fut.
 
 A szolgáltatás a **`mrz.guest.guru`** szerveren fut, **pm2** alatt. Élesítés:
